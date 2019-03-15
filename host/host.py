@@ -6,7 +6,7 @@ ledState = [
     {
      'state': True,
      'effectNo': 13,
-     'testString': u'This is a Test!'
+     'testString': 'This is a Test!'
     }
 ]
 
@@ -22,11 +22,18 @@ def returnLedState():
 @app.route('/api/newdevice', methods=['POST'])
 def addNewDevice():
     if not request.json or not 'mac' in request.json:
-        print("No json request!")
+        print("No or invalide json request!")
         abort(400)
     print(request.json['mac'])
     return jsonify({'State':"Okay"}),200
 
+@app.route('/api/heartbeat' methods=['POST'])
+def deviceHeartbeat():
+    if not request.json or not 'mac' in request.json:
+        print("No or invalide json request!")
+        abort(400)
+    print(request.json['mac'])
+    return jsonify({'State':"Okay"}),200
 
 if __name__ == '__main__':
     app.run(debug = True)

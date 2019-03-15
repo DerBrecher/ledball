@@ -25,7 +25,7 @@ def _deactivate(args):
 _deactivate(["nondestructive"])
 aliases["deactivate"] = _deactivate
 
-$VIRTUAL_ENV = r"/home/robin/Desktop/ledball/host/vpython"
+$VIRTUAL_ENV = r"/home/db/Desktop/ledball/host/vpython"
 
 $_OLD_VIRTUAL_PATH = $PATH
 $PATH = $PATH[:]
