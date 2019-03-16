@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" sizes="192x192" href="images/android-desktop.png">
+    
+    <style>
+      body {line-height: 150%;}
+    </style>
+  </head>
+
+  <body>
+    <h1>
+      LED Ball Control Panel
+    </h1>
+    <form action = {{url_for("updateState")}} method = "POST">
+      <table>
+        <tr align="left">
+          <th>ON/OFF</th>
+          <th><input type="checkbox" name="state"  value="on"></th>
+        </tr>
+        <tr align="left">
+          <th>Effect Speed</th>
+          <th><input type="range" name="effectSpeed" min="10" max="2000"></th>
+        </tr>
+        <tr align="left">
+          <th>Color Picker</th>
+          <th><input type="color" value="{{ currentColor }}" id="colorWell" name="ledColor"/></th>
+        </tr>
+        <tr align="left" >
+          <th></th>
+          <th><p><input type = "submit" value = "Update" /></p></th>
+        </tr>
+      </table>
+    </form>
+  </body>
+</html>
