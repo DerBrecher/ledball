@@ -3,16 +3,23 @@ from flask import jsonify
 class ledBallClass:
     state = True
     red = 255
-    green = 0
+    green = 128
     blue = 0
-    hexColor = "#FFFFFF"
+    hexColor = ""
     brightness = 100
     fadeSpeed = 100
-    effectSpeed = 1000
+    effectSpeed = 100
     effectNo = 1
     randomEffect= False
     randomColor = False
     rainbowColor = False
+
+    def __init__(self):
+        initalHex = "#"
+        initalHex += "{:02X}".format(self.red)
+        initalHex += "{:02X}".format(self.green)
+        initalHex += "{:02X}".format(self.blue)
+        self.hexColor = initalHex
 
     def getStateAsJson(self):
         json = {}
