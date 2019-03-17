@@ -35,11 +35,13 @@
         </tr>
         <tr align="left">
           <th>Effect Speed</th>
-          <th><input type="range" name="effectSpeed" value="{{ currentBallState.effectSpeed }}" min="0" max="2000"/></th>
+          <th><input type="range" name="effectSpeed" value="{{ currentBallState.effectSpeed }}" min="0" max="255"/></th>
+          <th>{{ currentBallState.effectSpeed }}</th>
         </tr>
         <tr align="left">
           <th>Fade Speed</th>
           <th><input type="range" name="fadeSpeed" value="{{ currentBallState.fadeSpeed }}" min="0" max="255"/></th>
+          <th>{{ currentBallState.fadeSpeed }}</th>
         </tr>
         <tr align="left">
           <th>Random Color</th>
@@ -60,6 +62,7 @@
         <tr align="left">
           <th>Brightness</th>
           <th><input type="range" name="brightness" value="{{ currentBallState.brightness }}" min="0" max="255"></th>
+          <th>{{ currentBallState.brightness }}</th>
         </tr>
         <tr align="left" >
           <th></th>
