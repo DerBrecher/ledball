@@ -14,7 +14,21 @@ class ledBallClass:
     randomColor = False
     rainbowColor = False
 
-
+    def getStateAsJson(self):
+        json = {}
+        json["state"] = self.state
+        json["color"] = {}
+        json["color"]["red"] = self.red
+        json["color"]["green"] = self.green
+        json["color"]["blue"] = self.blue
+        json["brightness"] = self.brightness
+        json["fadeSpeed"] = self.fadeSpeed
+        json["effectSpeed"] = self.effectSpeed
+        json["effectNo"] = self.effectNo
+        json["randomEffect"] = self.randomEffect
+        json["randomColor"] = self.randomColor
+        json["rainbowColor"] = self.rainbowColor
+        return jsonify(json)
 
     def getColorHex(self):
         hexOut = "#"
@@ -57,6 +71,9 @@ class ledBallClass:
             self.rainbowColor = False
         if form["colorInputType"] == "rainbowColor":
             self.rainbowColor = True
+            self.randomColor = False
+        if form["colorInputType"] == "manualColor":
+            self.rainbowColor = False
             self.randomColor = False
 
         self.brightness = form["brightness"]

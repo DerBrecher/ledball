@@ -9,9 +9,9 @@ ledState = [
     "brightness":255,
     "fadeSpeed":100,
     "effectSpeed":True,
-    "effectNo":True,
+    "effectNo":13,
     "randomEffect":True,
     "randomColor":True,
-    "rainbow":True
+    "rainbowColor":True
   }
 ]

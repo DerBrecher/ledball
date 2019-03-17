@@ -20,7 +20,7 @@ def updateState():
 @app.route('/api/ledstate', methods=['GET'])
 def returnLedState():
     global ledBall
-    return jsonify(ledState)
+    return ledBall.getStateAsJson()
 
 @app.route('/colortest')
 def colorTest():
