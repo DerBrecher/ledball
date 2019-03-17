@@ -1,46 +1,31 @@
 from flask import Flask, jsonify, abort, request, render_template, redirect, url_for
-import diytools
+from app.ledball import ledBallClass
 
 app = Flask(__name__)
 
-ledState = {
-    "state":True,
-    "color":{
-      "red":255,
-      "green":255,
-      "blue":255
-    },
-    "brightness":255,
-    "fadeSpeed":100,
-    "effectSpeed":1000,
-    "effectNo":13,
-    "randomEffect":False,
-    "randomColor":False,
-    "rainbow":True
-  }
+ledBall = ledBallClass()
 
 @app.route('/')
 def index():
-    global ledState
-    return render_template("index.html", currentColor = diytools.jsontohex(ledState["color"]))
+    global ledBall
+    return render_template("index.html", currentBallState = ledBall)
 
 @app.route("/updateState", methods=["POST"])
 def updateState():
-    global ledState
+    global ledBall
     if request.method == "POST":
-        ledState["color"] = diytools.hextojson(request.form["ledColor"])
-        print(ledState)
+        ledBall.handleHtmlForm(request.form)
         return redirect(url_for("index"))
 
 @app.route('/api/ledstate', methods=['GET'])
 def returnLedState():
-    global ledState
+    global ledBall
     return jsonify(ledState)
 
 @app.route('/colortest')
 def colorTest():
-    global ledState
-    return render_template("colorTest.html", currentColor = diytools.jsontohex(ledState["color"]))
+    global ledBall
+    return render_template("colorTest.html", currentBallState = ledBall)
 
 if __name__ == '__main__':
     app.run(debug = True, host= "0.0.0.0")
