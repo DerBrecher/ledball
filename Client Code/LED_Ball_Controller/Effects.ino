@@ -1,3 +1,32 @@
+/*
+  Information about Tap : Accommodates the lighting effects. Both status effects and finale effects the ball displays
+*/
+
+//Variable section
+//gamma Array that replaces the calculate RGB Values in the function ShowMatrix if activated
+const uint8_t gamma[] = {
+  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  2,  2,  2,
+  2,  3,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,
+  7,  8,  8,  9,  9, 10, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14,
+  15, 15, 16, 17, 17, 18, 18, 19, 19, 20, 21, 21, 22, 22, 23, 24,
+  24, 25, 26, 26, 27, 28, 28, 29, 30, 30, 31, 32, 33, 33, 34, 35,
+  36, 36, 37, 38, 39, 39, 40, 41, 42, 43, 43, 44, 45, 46, 47, 48,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 56, 57, 58, 59, 60, 61, 62,
+  63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+  79, 80, 81, 82, 83, 84, 85, 86, 88, 89, 90, 91, 92, 93, 94, 95,
+  97, 98, 99, 100, 101, 102, 103, 105, 106, 107, 108, 109, 111, 112, 113, 114,
+  115, 117, 118, 119, 120, 122, 123, 124, 125, 127, 128, 129, 131, 132, 133, 134,
+  136, 137, 138, 140, 141, 142, 144, 145, 146, 148, 149, 151, 152, 153, 155, 156,
+  157, 159, 160, 162, 163, 164, 166, 167, 169, 170, 172, 173, 174, 176, 177, 179,
+  180, 182, 183, 185, 186, 188, 189, 191, 192, 194, 195, 197, 198, 200, 201, 203,
+  205, 206, 208, 209, 211, 212, 214, 216, 217, 219, 220, 222, 224, 225, 227, 228,
+  230, 232, 233, 235, 237, 238, 240, 242, 243, 245, 247, 248, 250, 252, 253, 255
+};
+
+
+
+
+
 //---------------------------Light Control---------------------------//
 void LightControl() {
 
@@ -63,23 +92,25 @@ void LightControl() {
 }
 
 void ShowMatrix() {
-  //Copy Data form 2D FastLED Array to 1D NeoPixelBusArray & apply Brightness & apply gamma8 only to brightness
+  //Convert 2D Matrix into the 1D Matrix
   for (int i = 0 ; i < matrix_x; i++) {
     for (int u = 0; u < matrix_y; u++) {
       if (i % 2) {
         int reverse_U = matrix_y - u - 1;
-        *(strip.Pixels() + (i * matrix_y + reverse_U) * 3) = int(leds[i][u][0])*gamma8[oldBrightness]/255; //Red
-        *(strip.Pixels() + (i * matrix_y + reverse_U) * 3 + 1) = int(leds[i][u][1])*gamma8[oldBrightness]/255; //Green
-        *(strip.Pixels() + (i * matrix_y + reverse_U) * 3 + 2) = int(leds[i][u][2])*gamma8[oldBrightness]/255; //Blue
+        ledoutput[i * matrix_y + reverse_U] = leds[i][u];
       } else {
-        *(strip.Pixels() + (i * matrix_y + u) * 3) = int(leds[i][u][0])*gamma8[oldBrightness]/255; //Red
-        *(strip.Pixels() + (i * matrix_y + u) * 3 + 1) = int(leds[i][u][1])*gamma8[oldBrightness]/255; //Green
-        *(strip.Pixels() + (i * matrix_y + u) * 3 + 2) = int(leds[i][u][2])*gamma8[oldBrightness]/255; //Blue
+        ledoutput[i * matrix_y + u] = leds[i][u];
       }
     }
   }
-  strip.Dirty();
-  strip.Show();
+  //Replace Calculated RGB Values with Gamma Values
+  if (activatedGammaCorrection) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = gamma[leds[i]];
+    }
+  }
+  LEDS.setBrightness(oldBrightness);
+  FastLED.show();
 }
 
 void RandomColor() {
@@ -536,4 +567,3 @@ void fadeAllToPrecent() {
 
 
 //---------------------------End Global Light Effects---------------------------//
-

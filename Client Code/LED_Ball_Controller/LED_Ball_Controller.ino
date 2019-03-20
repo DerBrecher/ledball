@@ -1,133 +1,98 @@
-#define FASTLED_ESP8266_RAW_PIN_ORDER
+//#define FASTLED_ESP8266_RAW_PIN_ORDER
 #include <FastLED.h>
-#include <NeoPixelBus.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-//#include <WiFi.h>
+//#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <PubSubClient.h>
-#include <ArduinoJson.h>
 
+//Include Secret Header
 #include <secrets.h>
+
 /*
-  Name        :   Led Ball Controller
-  Programmer  :   Nico Weidenfeller
-  Created     :   21.02.2019
-  Version     :   1.0
-  Description :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
+  Name          :   Led Ball Controller
+  Programmer    :   Nico Weidenfeller
+  Created       :   21.02.2019
+  Last Modifed  :   20.03.2019  //Not Working
+  Version       :   1.1
+  Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
-  ToDoList    :   => Check - Add gamma correction
-                  - When gamma correction is used fix fade to new color with gamma correction
+  ToDoList      :   =>
+                    - Add Boundry Check for MQTT Parameter
+                    - Disable MQTT Parameter Sync depending on the used Effect to prevent overide
+                    - When gamma correction is used fix fade to new color with gamma correction
 
-  Error Help  :   1. If the ball blinks red and black its an Effect Watchdog Error. If this happens an Effect to longer than 10 sec to complete
-                  2. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
-                  3. If the ball has a red ring going around it. Then its a General Error. If this happens try to restart the ball, and check the States if it happens again.
+  Error Help    :   1. If the ball blinks red and black its an Effect Watchdog Error. If this happens an Effect to longer than 10 sec to complete
+                    2. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
+                    3. If the ball has a red ring going around it. Then its a General Error. If this happens try to restart the ball, and check the States if it happens again.
 
-  Patchnotes  :   Version 1.0
-                  Initial Code
+  Patchnotes    :   Version 1.0
+                      Initial Code
+                    Version 1.1
+                      Overhaul of the State Machines and Code cleanup
 
-  EffectList  :   1. fadeall()              => Fades all pixels to black by an nscale8 number
-                  2. black()                => Makes all LEDs black (no brightness change)
-                  3. setSolidColor()        => Fills all LEDs with new Color
-                  4. setFadeColor()         => Fades all LEDs to new Color
-                  5. setSolidBrightness()   => Sets the Brightness to the new value
-                  6. setFadeBrightness()    => Fades the Brightness to the new value
-                  7. fillSoild()            => Fills the Matrix with a choosen Color
-                  8. fadeAllToBlack()       => Fades the Matrix to Black
-                  9: fadeAllToPrecent()     => Fades the Matrix to a Percentage
+  EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
+                    2. black()                => Makes all LEDs black (no brightness change)
+                    3. setSolidColor()        => Fills all LEDs with new Color
+                    4. setFadeColor()         => Fades all LEDs to new Color
+                    5. setSolidBrightness()   => Sets the Brightness to the new value
+                    6. setFadeBrightness()    => Fades the Brightness to the new value
+                    7. fillSoild()            => Fills the Matrix with a choosen Color
+                    8. fadeAllToBlack()       => Fades the Matrix to Black
+                    9: fadeAllToPrecent()     => Fades the Matrix to a Percentage
+
+  Main Tap Info :   Owns the status machines of the LED ball and initialize the programm
 */
 
-#define max(a,b) ((a)>(b)?(a):(b))
-
+//Developer mode skips some initializations and blocks startup effects for shorter Startup time.
 boolean DevMode = true;
+
+//--- LED Ball Parameters ---//
+#define NUM_LEDS 400                      //Number of LEDs from the Ball
+#define matrix_x 16                       //Number of LEDs on the X-Axis
+#define matrix_y 25                       //Number of LEDs on the Y-Axis
+
+#define LED_PIN 2                         //Data Pin for the LED Matrix
+#define CHIPSET WS2812B                   //Chipset of the LEDs
+#define COLOR_ORDER RGB                   //Color Order of the LEDs
+CRGB ledoutput[NUM_LEDS];                 //1D matrix that represents the real construction of the led strips. Gets pushed out to the Dataline
+CRGB leds[matrix_x][matrix_y];            //2D matrix that mimics the given Matrix on the ball, for easier effect programming. Gets converted into the 1D Matrix
+boolean activatedGammaCorrection = true;  //Activates or deactivates the gamma correction
+
+//--- Main State Machine ---//
+int MainState = 0;                  //Status of the Main State Machine
+#define FPS 60                      //FPS with which the LED Matrix get pushed out
+
+//--- Light State Machine ---//
+int LightState = 0;                 //Status of the Light State Machine
 
 //Debug Defines
 #define DEBUG_NETWORK
 //#define DEBUG_STATES
 
-//FPS
-#define FPS 60
 
-//LED Ball
-#define NUM_LEDS    400
-//Hardware support forces PIN 3 as Pixel Output
-NeoPixelBus<NeoRgbFeature, Neo800KbpsMethod> strip(NUM_LEDS);
+//LED Ball Control Parameter
+//Truns the Ball ON / OFF
+boolean Power;            //On / Off
 
-//Matrix Specs
-#define matrix_x 16
-#define matrix_y 25
-CRGB leds[matrix_x][matrix_y];
+//Controls the Color shown on the Ball
+boolean RandomColor;      //On / Off
+boolean RainbowColor      //On / Off
+boolean RandomColorSync   //On / Off
+uint8_t Red;              //0 - 255
+uint8_t Green;            //0 - 255
+uint8_t Blue;             //0 - 255
 
-//MQTT (Temp for Testing Only)
-WiFiClient    wifiMqtt;
-PubSubClient  mqtt_Client(wifiMqtt);
-#define mqtt_server       "192.168.99.23"
-#define mqtt_username     "pi"
-#define mqtt_password     "raspberry"
-#define mqtt_port         1883
-#define mqtt_client_name  "MumLedBallControllerTest11"
+//Controls the Brightness of the Ball
+uint8_t Brightness;       //0 - 255
 
-//LED State Server
-#define LEDSERVERIP "192.168.99.34"
-#define LEDSERVERPORT 5000
-#define LEDSTATEURI "/api/ledstate"
-
-#define POLLINGRATE 1000/1
-
-//WIFI Parameter
-const char* wifi_ssid     = SSIDWZ;
-const char* wifi_password = WPA2WZ;
-
-//-------------------------------------Mqtt Paths--------------------------------------//
-const char* mqtt_LED_setcolor       = "ledball/setcolor";
-const char* mqtt_LED_getcolor       = "ledball/getcolor";
-const char* mqtt_LED_setbrightness  = "ledball/setbrightness";
-const char* mqtt_LED_getbrightness  = "ledball/getbrightness";
-const char* mqtt_LED_setstatus      = "ledball/setstatus";
-const char* mqtt_LED_getstatus      = "ledball/getstatus";
-const char* mqtt_LED_seteffect      = "ledball/seteffect";
-const char* mqtt_LED_geteffect      = "ledball/geteffect";
-const char* mqtt_LED_EffectSpeed    = "ledball/effectspeed";
-const char* mqtt_LED_FadeSpeed      = "ledball/fadespeed";
-const char* mqtt_LED_Random_Effect  = "ledball/randomeffect";
-const char* mqtt_LED_Random_Color   = "ledball/randomcolor";
-const char* mqtt_LED_RainbowActive  = "ledball/rainbowactive";
-//-----------------------------------End Mqtt Paths------------------------------------//
-
-//Effect Parameter
-boolean Power = false;          //On / Off
-boolean Random_Color = false;   //On / Off
-boolean Random_Effect = false;  //On / Off
-uint8_t Color_Red = 0;          //0 - 255
-uint8_t Color_Green = 255;      //0 - 255
-uint8_t Color_Blue = 0;         //0 - 255
-uint8_t Brightness = 150;       //0 - 255
-uint8_t Effect_Speed = 10;      //0 - 255
-uint8_t Fade_Speed = 10;        //0 - 255
-uint8_t Effect_Number = 0;      //0 - 255
-uint8_t Effect_Direction = 2;   // 8 == Up // 6 == Right // 2 == Down // 4 == Left
-boolean Rainbow = false;        //On / Off
-boolean Rainbow_Active = false; //On / Off
+//Controls the Effect show on the Ball
+boolean RandomEffect;     //On / Off
+uint8_t EffectSpeed;      //0 - 255
+uint8_t FadeSpeed;        //0 - 255
+uint8_t EffectNumber;     //0 - 255
+uint8_t EffectDirection;  // 8 == Up // 6 == Right // 2 == Down // 4 == Left
 
 
-//Gamma Correction Array
-const uint8_t gamma8[] = {
-  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  2,  2,  2,
-  2,  3,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,
-  7,  8,  8,  9,  9, 10, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14,
-  15, 15, 16, 17, 17, 18, 18, 19, 19, 20, 21, 21, 22, 22, 23, 24,
-  24, 25, 26, 26, 27, 28, 28, 29, 30, 30, 31, 32, 33, 33, 34, 35,
-  36, 36, 37, 38, 39, 39, 40, 41, 42, 43, 43, 44, 45, 46, 47, 48,
-  48, 49, 50, 51, 52, 53, 54, 55, 56, 56, 57, 58, 59, 60, 61, 62,
-  63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
-  79, 80, 81, 82, 83, 84, 85, 86, 88, 89, 90, 91, 92, 93, 94, 95,
-  97, 98, 99, 100, 101, 102, 103, 105, 106, 107, 108, 109, 111, 112, 113, 114,
-  115, 117, 118, 119, 120, 122, 123, 124, 125, 127, 128, 129, 131, 132, 133, 134,
-  136, 137, 138, 140, 141, 142, 144, 145, 146, 148, 149, 151, 152, 153, 155, 156,
-  157, 159, 160, 162, 163, 164, 166, 167, 169, 170, 172, 173, 174, 176, 177, 179,
-  180, 182, 183, 185, 186, 188, 189, 191, 192, 194, 195, 197, 198, 200, 201, 203,
-  205, 206, 208, 209, 211, 212, 214, 216, 217, 219, 220, 222, 224, 225, 227, 228,
-  230, 232, 233, 235, 237, 238, 240, 242, 243, 245, 247, 248, 250, 252, 253, 255
-};
+
 
 //Error Variables /Normal Variables for  WiFi
 int CantFindWiFiCounter = 0;
@@ -166,7 +131,7 @@ unsigned long PrevMillis_DiscoBall            = 0;
 unsigned long PrevMillis_Rave                 = 0;
 unsigned long PrevMillis_RingRun              = 0;
 unsigned long PrevMillis_DiscoField           = 0;
-unsigned long PrevMillis_JSONPolling          = 0;
+
 
 unsigned long TimeOut_Example                 = 1000; // 1.00 Seconds
 unsigned long TimeOut_RGBCheck                = 2000; // 2.00 Seconds
@@ -254,11 +219,14 @@ int PosYEffectRingRun = 0;
 int CounterNewFieldGen = 0;
 
 
-
+/*-------------------------------------- Setup --------------------------------------*/
 void setup() {
   Serial.begin(115200);
   delay(100);
   Serial.println("Start Setup");
+  Serial.println("LED Ball Version 1.0");
+  Serial.println("Programmer : Nico Weidenfeller");
+  Serial.println("");
 
   Serial.println("Set MQTT Parameter");
   mqtt_Client.setServer(mqtt_server, mqtt_port);
@@ -266,127 +234,139 @@ void setup() {
   Serial.println("Finished setting MQTT Parameter");
 
   Serial.println("Start Wifi Connection");
-  reconnect_wifi();
+  wifi();
   Serial.println("Finished Wifi Connection");
 
-  Serial.println("Start MQTT Server Connection");
-  //reconnect_MqttClient();
-  Serial.println("Finished MQTT Server Connection");
-
   Serial.println("Initialize FastLED");
-  strip.Begin();
-  //LEDS.setBrightness(100);
+  LEDS.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(ledoutput, NUM_LEDS);
+  LEDS.setBrightness(100);
   Serial.println("Finished Initialize FastLED");
 
   Serial.println("Finished Setup");
 }
 
+
+/*-------------------------------------- Loop --------------------------------------*/
 void loop() {
+
+  /*--------------------- Cyclic monitoring and processing ---------------------*/
+  //Publishes the LED Matrix at an Set FPS Rate
+  unsigned long CurMillis_PublishMatrix = millis();
+  if (CurMillis_PublishMatrix - PrevMillis_PublishMatrix >= int(FPS / 1000)) {
+    PrevMillis_PublishMatrix = CurMillis_PublishMatrix;
+    ShowMatrix();
+  }
+
+  //Syncs Main Parameter with the Paramter from MQTT
+  syncParameter();
+
+  //Monitoring Wifi Connection
   if (int(NoWifiCounter) >= 10) {
     ESP.restart();
   }
 
-  //---------------------------Network Loop---------------------------//
   mqtt_Client.loop();
 
   //Reconnect to WiFi if it loses connection
   if (WiFi.status() != WL_CONNECTED) {
-    reconnect_wifi();
+    wifi();
   } else {
     if (!mqtt_Client.connected()) {
       reconnect_MqttClient();
     }
   }
 
-  //---------------------------Main Loop---------------------------//
+  //Serial Print for Information
+  printer();
 
-  //Print Main Control State and Light State for Debug
-#ifdef DEBUG_STATES
-  //Main State
-  if (MainState != LastMainState) {
-    LastMainState = MainState;
-    Serial.println("/----Main State----/");
-    Serial.print("   Main State : ");
-    Serial.println(MainState);
-    Serial.println("/------------------/");
-  }
-  //Light State
-  if (LightState != LastLightState) {
-    LastLightState = LightState;
-    Serial.println("/----Light State----/");
-    Serial.print("   Light State : ");
-    Serial.println(LightState);
-    Serial.println("/-------------------/");
-  }
-#endif
-
-  //Main Procedure over the Led Ball
-  MainControl();
-  jsonHandler();
-  //Test Section for Effects etc...
-
-}
-
-//---------------------------Main Control---------------------------//
-void MainControl() {
+  //--------------------------- Main State machine of the LED ball ---------------------------//
 
   switch (MainState) {
 
-    case 0:
-      //Shows the Matrix in Red,Green and Blue to Look for broken Leds
+    case 0: //RGB Check to spot defect LEDs
       if (DevMode) {
-        MainState = 20;
+        MainState = 10;
       } else {
-        MainStateRGBCheck = RGBCheck();
-        if (MainStateRGBCheck == true) {
+        boolean RGBCheckFinished = RGBCheck();
+        if (RGBCheckFinished) {
           MainState = 10;
         }
       }
       break;
 
-    case 10:
-      ResetRGBCheck();
+    case 10: //Initialization of LED Ball Parameter
+      InitParameter();
       MainState = 20;
       break;
 
-    case 20:
-      InitParameter();
+    case 20: //Initialization of Arrays who are used in Effects and have to be preloaded
+      InitEffectArrays();
       MainState = 30;
       break;
 
-    case 30:
-      //InitPixelArray();
-      MainState = 31;
-      break;
-
-    case 31:
-      InitEffectArrays();
-      MainState = 40;
-      break;
-
-    case 40:
+    case 30: //Startup Effect to show the User that the Ball is ready to use
       if (DevMode) {
-        MainState = 50;
+        MainState = 100;
       } else {
-        MainStateStatusEffectStartupReady = StatusEffectStartupReady();
-        if (MainStateStatusEffectStartupReady) {
-          MainState = 50;
+        boolean StartupEffectFinished = StatusEffectStartupReady();
+        if (StartupEffectFinished) {
+          MainState = 40;
         }
       }
+      break;
+
+    case 40: //Waits 3 Seconds after StartupEffect and Blacks out the Ball
       delay(3000);
       black();
+      MainState = 100;
       break;
 
-    case 50:
-      LightControl();
+    case 100: //Goes into the State Machine for the Light Effects
+      lightControl();
       break;
 
-    default:
-      StatusEffectError();
+    case 999: //Error Mode when no WiFi is Connected
+      break;
+
+    default: //General Error State in the State Machine
       break;
 
   }
 
+}
+
+//--------------------------- Light State machine of the LED ball ---------------------------//
+void lightControl() {
+
+  switch (LightState) {
+
+    case 0:
+      break;
+
+    case 10:
+      break;
+
+    default:
+      break;
+  }
+
+}
+
+void syncParameter() {
+  //Syncs the Parameter from MQTT. Depending on the Effect / Mode some Parameter will get ignored 
+  Power             = mqtt_Power;
+  RandomColor       = mqtt_RandomColor;
+  RainbowColor      = mqtt_RainbowColor;
+  RandomColorSync   = mqtt_RandomColorSync;
+  Red               = mqtt_Red;
+  Green             = mqtt_Green;
+  Blue              = mqtt_Blue;
+  Brightness        = mqtt_Brightness;
+  RandomEffect      = mqtt_RandomEffect;
+  EffectSpeed       = mqtt_EffectSpeed;
+  FadeSpeed         = mqtt_FadeSpeed;
+  EffectNumber      = mqtt_EffectNumber;
+  EffectDirection   = mqtt_EffectDirection;
 }
 
 boolean RGBCheck() {
@@ -425,11 +405,20 @@ void ResetRGBCheck() {
 }
 
 void InitParameter() {
-  //Init Parameter
-  oldBrightness = Brightness;
-  oldColorRed   = Color_Red;
-  oldColorGreen = Color_Green;
-  oldColorBlue  = Color_Blue;
+  //Initializing the LED Ball parameters will be overwritten later by the commands of MQTT
+  Power             = false;
+  RandomColor       = false;
+  RainbowColor      = false;
+  RandomColorSync   = false;
+  Red               = 0;
+  Green             = 128;
+  Blue              = 255;
+  Brightness        = 150;
+  RandomEffect      = false;
+  EffectSpeed       = 10;
+  FadeSpeed         = 10;
+  EffectNumber      = 0;
+  EffectDirection   = 8;
 }
 
 
