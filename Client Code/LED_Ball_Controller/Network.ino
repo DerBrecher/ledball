@@ -3,7 +3,7 @@
 */
 
 //Variable section
-//MQTT Parameter
+//Network Parameter
 WiFiClient    wifiMqtt;
 PubSubClient  mqtt_Client(wifiMqtt);
 #define mqtt_server       "192.168.99.23"
@@ -11,10 +11,6 @@ PubSubClient  mqtt_Client(wifiMqtt);
 #define mqtt_password     "raspberry"
 #define mqtt_port         1883
 #define mqtt_client_name  "MumLedBallControllerTest2"
-
-//WIFI Parameter
-
-
 
 //------------------------------------- Mqtt Paths --------------------------------------//
 const char* mqtt_LED_setcolor       = "ledball/setcolor";
@@ -36,7 +32,6 @@ const char* mqtt_LED_RainbowActive  = "ledball/rainbowactive";
  * Mirror image of the real parameters. Are only used to 
  * prevent confusion of origin (personal programming preferenc)
  */
-
 boolean mqtt_Power;        
 
 boolean mqtt_RandomColor;      
@@ -54,7 +49,7 @@ uint8_t mqtt_FadeSpeed;
 uint8_t mqtt_EffectNumber;     
 uint8_t mqtt_EffectDirection; 
 
-//WiFi Control 
+//------------------------------------- WiFi Control -------------------------------------//
 void wifi() {
   delay(10);
   //Start Wifi Connection
@@ -69,10 +64,10 @@ void wifi() {
   }
 
 }
-//----------------------------------End Reconnect Wifi-----------------------------------//
 
-//---------------------------------Reconnect MqttClient----------------------------------//
-void reconnect_MqttClient() {
+
+//------------------------------------- MQTT Control -------------------------------------//
+void mqtt() {
   delay(50);
   while (!mqtt_Client.connected()) {
     if (mqtt_Client.connect(mqtt_client_name, mqtt_username, mqtt_password)) {
@@ -90,9 +85,8 @@ void reconnect_MqttClient() {
     }
   }
 }
-//-------------------------------End Reconnect MqttClient--------------------------------//
 
-//---------------------------------------Callback----------------------------------------//
+//------------------------------------- MQTT Callback -------------------------------------//
 void callback(char* topic, byte * payload, unsigned int length) {
   char message[length + 1];
   for (int i = 0; i < length; i++) {

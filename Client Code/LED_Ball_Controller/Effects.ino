@@ -87,7 +87,7 @@ void LightControl() {
 
   } else {
     fadeall(40);
-    ShowMatrix();
+ 
   }
 }
 
@@ -326,7 +326,6 @@ void fillSolid() {
         leds[i][u] = CRGB(oldColorRed, oldColorGreen, oldColorBlue);
       }
     }
-    ShowMatrix();
   }
 }
 
@@ -337,7 +336,6 @@ void Equalizer() {
 
 
 
-    ShowMatrix();
   }
 
 }
@@ -374,7 +372,6 @@ void RainDrop() {
       int RandomPixel = (int)random(0, matrix_x);
       leds[RandomPixel][0] = CRGB(oldColorRed, oldColorGreen, oldColorBlue);
     }
-    ShowMatrix();
   }
 }
 
@@ -410,7 +407,6 @@ void RingRun() {
         }
         break;
     }
-    ShowMatrix();
     fadeall(Fade_Speed);
     PosXEffectRingRun++;
     if (PosXEffectRingRun > matrix_x - 1) {
@@ -529,6 +525,84 @@ void ShiftArrayToRight() {
 
 
 //---------------------------End Main Light Effects---------------------------//
+
+//---------------------------Information Effects---------------------------//
+void GeneralErrorEffect() {
+  unsigned long CurMillis_GeneralError = millis();
+  if (CurMillis_GeneralError - PrevMillis_GeneralError >= TimeOut_GeneralError) {
+    PrevMillis_GeneralError = CurMillis_GeneralError;
+    for (int i = 0; i < matrix_y; i++) {
+      leds[PosXStatusEffectError][i] = CRGB(255, 0, 0);
+    }
+    ShowMatrix();
+    fadeall(40);
+    if (PosXStatusEffectError >= matrix_x - 1) {
+      PosXStatusEffectError = 0;
+    } else {
+      PosXStatusEffectError++;
+    }
+  }
+}
+
+boolean RGBCheckEffect() {
+  unsigned long CurMillis_RGBCheck = millis();
+  if (CurMillis_RGBCheck - PrevMillis_RGBCheck >= TimeOut_RGBCheck) {
+    PrevMillis_RGBCheck = CurMillis_RGBCheck;
+    for (int i = 0; i < matrix_x; i++) {
+      for (int u = 0; u < matrix_y; u++) {
+        switch (RGBCheckColor) {
+          //Check RED
+          case 0:  leds[i][u] = CRGB(255, 0, 0);
+            break;
+
+          //Check Green
+          case 1:  leds[i][u] = CRGB(0, 255, 0);
+            break;
+
+          //Check Blue
+          case 2:  leds[i][u] = CRGB(0, 0, 255);
+            break;
+        }
+      }
+    }
+    RGBCheckColor++;
+  }
+  if (RGBCheckColor >= 4) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+boolean StartupReadyEffect() {
+  unsigned long CurMillis_EffectStartupReady = millis();
+  if (CurMillis_EffectStartupReady - PrevMillis_EffectStartupReady >= TimeOut_EffectStartupReady) {
+    PrevMillis_EffectStartupReady = CurMillis_EffectStartupReady;
+    for (int i = 0; i < matrix_y; i++) {
+      leds[PosXStatusEffectStartupReady][i] = CHSV(hueStartupReady++, 255, 255);
+    }
+    ShowMatrix();
+    if (CounterFinishedStartupSequence >= 9) {
+      for (int i = 0; i < matrix_y; i++) {
+        leds[PosXStatusEffectStartupReady][i] = CRGB(0, 0, 0);
+      }
+      ShowMatrix();
+    }
+    if (PosXStatusEffectStartupReady >= matrix_x - 1) {
+      PosXStatusEffectStartupReady = 0;
+      CounterFinishedStartupSequence++;
+    } else {
+      PosXStatusEffectStartupReady++;
+    }
+  }
+  //Effect Finished
+  if (CounterFinishedStartupSequence >= 10) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//---------------------------End Status Light Effects---------------------------//
 
 //---------------------------Global Light Effects---------------------------//
 

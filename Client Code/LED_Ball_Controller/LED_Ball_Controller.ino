@@ -92,8 +92,6 @@ uint8_t EffectNumber;     //0 - 255
 uint8_t EffectDirection;  // 8 == Up // 6 == Right // 2 == Down // 4 == Left
 
 
-
-
 //Error Variables /Normal Variables for  WiFi
 int CantFindWiFiCounter = 0;
 boolean CantFindWiFi = false;
@@ -101,10 +99,6 @@ boolean SaveLastMainState = false;
 int CantFindWiFiLastMainState;
 int CounterToRestartESP = 0; //If Counter is 5 the ESP Will Restart itself
 
-//Main Control
-int MainState = 0;
-int LastMainState = 0;
-boolean DevelopMode = false;  //Not used
 
 boolean MainStateRGBCheck = false;
 boolean MainStateStatusEffectStartupReady = false;
@@ -249,6 +243,8 @@ void setup() {
 /*-------------------------------------- Loop --------------------------------------*/
 void loop() {
 
+  mqtt_Client.loop();
+
   /*--------------------- Cyclic monitoring and processing ---------------------*/
   //Publishes the LED Matrix at an Set FPS Rate
   unsigned long CurMillis_PublishMatrix = millis();
@@ -265,14 +261,12 @@ void loop() {
     ESP.restart();
   }
 
-  mqtt_Client.loop();
-
-  //Reconnect to WiFi if it loses connection
+  //Reconnect to WiFi if it loses connection. After that try to connect to MQTT
   if (WiFi.status() != WL_CONNECTED) {
     wifi();
   } else {
     if (!mqtt_Client.connected()) {
-      reconnect_MqttClient();
+      mqtt();
     }
   }
 
@@ -287,8 +281,9 @@ void loop() {
       if (DevMode) {
         MainState = 10;
       } else {
-        boolean RGBCheckFinished = RGBCheck();
+        boolean RGBCheckFinished = RGBCheckEffect();
         if (RGBCheckFinished) {
+          black();
           MainState = 10;
         }
       }
@@ -308,7 +303,7 @@ void loop() {
       if (DevMode) {
         MainState = 100;
       } else {
-        boolean StartupEffectFinished = StatusEffectStartupReady();
+        boolean StartupEffectFinished = StartupReadyEffect();
         if (StartupEffectFinished) {
           MainState = 40;
         }
@@ -329,6 +324,7 @@ void loop() {
       break;
 
     default: //General Error State in the State Machine
+      GeneralErrorEffect();
       break;
 
   }
@@ -352,8 +348,9 @@ void lightControl() {
 
 }
 
+//--------------------------- Sync Parameter ---------------------------//
 void syncParameter() {
-  //Syncs the Parameter from MQTT. Depending on the Effect / Mode some Parameter will get ignored 
+  //Syncs the Parameter from MQTT. Depending on the Effect / Mode some Parameter will get ignored
   Power             = mqtt_Power;
   RandomColor       = mqtt_RandomColor;
   RainbowColor      = mqtt_RainbowColor;
@@ -369,41 +366,7 @@ void syncParameter() {
   EffectDirection   = mqtt_EffectDirection;
 }
 
-boolean RGBCheck() {
-  unsigned long CurMillis_RGBCheck = millis();
-  if (CurMillis_RGBCheck - PrevMillis_RGBCheck >= TimeOut_RGBCheck) {
-    PrevMillis_RGBCheck = CurMillis_RGBCheck;
-    for (int i = 0; i < matrix_x; i++) {
-      for (int u = 0; u < matrix_y; u++) {
-        switch (RGBCheckColor) {
-          //Check RED
-          case 0:  leds[i][u] = CRGB(255, 0, 0);
-            break;
-
-          //Check Green
-          case 1:  leds[i][u] = CRGB(0, 255, 0);
-            break;
-
-          //Check Blue
-          case 2:  leds[i][u] = CRGB(0, 0, 255);
-            break;
-        }
-      }
-    }
-    RGBCheckColor++;
-    ShowMatrix();
-  }
-  if (RGBCheckColor >= 4) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-void ResetRGBCheck() {
-  black();
-}
-
+//--------------------------- Init Parameter ---------------------------//
 void InitParameter() {
   //Initializing the LED Ball parameters will be overwritten later by the commands of MQTT
   Power             = false;
@@ -421,58 +384,7 @@ void InitParameter() {
   EffectDirection   = 8;
 }
 
-
+//--------------------------- Init Effect Arrays ---------------------------//
 void InitEffectArrays() {
 
 }
-//---------------------------End Main Control---------------------------//
-
-//---------------------------Status Effects---------------------------//
-
-void StatusEffectError() {
-  unsigned long CurMillis_GeneralError = millis();
-  if (CurMillis_GeneralError - PrevMillis_GeneralError >= TimeOut_GeneralError) {
-    PrevMillis_GeneralError = CurMillis_GeneralError;
-    for (int i = 0; i < matrix_y; i++) {
-      leds[PosXStatusEffectError][i] = CRGB(255, 0, 0);
-    }
-    ShowMatrix();
-    fadeall(40);
-    if (PosXStatusEffectError >= matrix_x - 1) {
-      PosXStatusEffectError = 0;
-    } else {
-      PosXStatusEffectError++;
-    }
-  }
-}
-
-boolean StatusEffectStartupReady() {
-  unsigned long CurMillis_EffectStartupReady = millis();
-  if (CurMillis_EffectStartupReady - PrevMillis_EffectStartupReady >= TimeOut_EffectStartupReady) {
-    PrevMillis_EffectStartupReady = CurMillis_EffectStartupReady;
-    for (int i = 0; i < matrix_y; i++) {
-      leds[PosXStatusEffectStartupReady][i] = CHSV(hueStartupReady++, 255, 255);
-    }
-    ShowMatrix();
-    if (CounterFinishedStartupSequence >= 9) {
-      for (int i = 0; i < matrix_y; i++) {
-        leds[PosXStatusEffectStartupReady][i] = CRGB(0, 0, 0);
-      }
-      ShowMatrix();
-    }
-    if (PosXStatusEffectStartupReady >= matrix_x - 1) {
-      PosXStatusEffectStartupReady = 0;
-      CounterFinishedStartupSequence++;
-    } else {
-      PosXStatusEffectStartupReady++;
-    }
-  }
-  //Effect Finished
-  if (CounterFinishedStartupSequence >= 10) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-//---------------------------End Status Effects---------------------------//
