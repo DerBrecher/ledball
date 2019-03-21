@@ -75,8 +75,8 @@ boolean Power;            //On / Off
 
 //Controls the Color shown on the Ball
 boolean RandomColor;      //On / Off
-boolean RainbowColor      //On / Off
-boolean RandomColorSync   //On / Off
+boolean RainbowColor;      //On / Off
+boolean RandomColorSync;   //On / Off
 uint8_t Red;              //0 - 255
 uint8_t Green;            //0 - 255
 uint8_t Blue;             //0 - 255
