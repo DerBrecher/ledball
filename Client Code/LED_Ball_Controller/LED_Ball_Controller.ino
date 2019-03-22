@@ -11,8 +11,8 @@
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   20.03.2019  //Not Working
-  Version       :   1.1
+  Last Modifed  :   22.03.2019  //Not Working
+  Version       :   1.1.1
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
@@ -28,6 +28,8 @@
                       Initial Code
                     Version 1.1
                       Overhaul of the State Machines and Code cleanup
+                    Version 1.1.1
+                      Cleanup in the Main and Network Tab. Added Debug Messages for Network in the Information Tab. And some small Bugfixes
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
