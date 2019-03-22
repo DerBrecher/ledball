@@ -2,84 +2,57 @@
   Information about Tap : Controls Wifi Connection and receives and process Commands
 */
 
-//Variable section
-//Network Parameter
-WiFiClient    wifiMqtt;
-PubSubClient  mqtt_Client(wifiMqtt);
-#define mqtt_server       "192.168.99.23"
-#define mqtt_username     "pi"
-#define mqtt_password     "raspberry"
-#define mqtt_port         1883
-#define mqtt_client_name  "MumLedBallControllerTest2"
-
-//------------------------------------- Mqtt Paths --------------------------------------//
-const char* mqtt_LED_setcolor       = "ledball/setcolor";
-const char* mqtt_LED_getcolor       = "ledball/getcolor";
-const char* mqtt_LED_setbrightness  = "ledball/setbrightness";
-const char* mqtt_LED_getbrightness  = "ledball/getbrightness";
-const char* mqtt_LED_setstatus      = "ledball/setstatus";
-const char* mqtt_LED_getstatus      = "ledball/getstatus";
-const char* mqtt_LED_seteffect      = "ledball/seteffect";
-const char* mqtt_LED_geteffect      = "ledball/geteffect";
-const char* mqtt_LED_EffectSpeed    = "ledball/effectspeed";
-const char* mqtt_LED_FadeSpeed      = "ledball/fadespeed";
-const char* mqtt_LED_Random_Effect  = "ledball/randomeffect";
-const char* mqtt_LED_Random_Color   = "ledball/randomcolor";
-const char* mqtt_LED_RainbowActive  = "ledball/rainbowactive";
-
-//---- LED Ball Control Parameter from MQTT ----//
-/*
- * Mirror image of the real parameters. Are only used to 
- * prevent confusion of origin (personal programming preferenc)
- */
-boolean mqtt_Power;        
-
-boolean mqtt_RandomColor;      
-boolean mqtt_RainbowColor      
-boolean mqtt_RandomColorSync  
-uint8_t mqtt_Red;              
-uint8_t mqtt_Green;           
-uint8_t mqtt_Blue;            
-
-uint8_t mqtt_Brightness;      
-
-boolean mqtt_RandomEffect;   
-uint8_t mqtt_EffectSpeed;     
-uint8_t mqtt_FadeSpeed;        
-uint8_t mqtt_EffectNumber;     
-uint8_t mqtt_EffectDirection; 
-
 //------------------------------------- WiFi Control -------------------------------------//
 void wifi() {
-  delay(10);
+  delay(1);
   //Start Wifi Connection
-  WiFi.begin(SSIDWZ, WPA2WZ);
-  delay(10);
+  if (StartWifiConnection) {
+    WiFi.begin(SSIDWZ, WPA2WZ);
+    StartWifiConnection = false;
+  }
+  delay(1);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+  //Check if WiFi is Connected
+  if (WiFi.status() == WL_CONNECTED) {
+    //Reset
+    StartWifiConnection = true;
+    NoWifiCounter = 0;
+  }
+  delay(1);
+
+  //Count in 300ms Step if no WiFi is Connected.
+  unsigned long CurMillis_NoWiFiCounter = millis();
+  if (CurMillis_NoWiFiCounter - PrevMillis_NoWiFiCounter >= TimeOut_NoWiFiCounter) {
+    PrevMillis_NoWiFiCounter = CurMillis_NoWiFiCounter;
     NoWifiCounter++;
     Serial.print("No WiFi : ");
     Serial.println(int(NoWifiCounter));
   }
 
-}
+  //Restart ESP after the Counter hits 10
+  if (int(NoWifiCounter) >= 10) {
+    ESP.restart();
+  }
 
+}
 
 //------------------------------------- MQTT Control -------------------------------------//
 void mqtt() {
   delay(50);
+  //Try to Reconnect to MQTT and subscribe to the Channels
   while (!mqtt_Client.connected()) {
     if (mqtt_Client.connect(mqtt_client_name, mqtt_username, mqtt_password)) {
-      mqtt_Client.subscribe( mqtt_LED_setcolor);
-      mqtt_Client.subscribe( mqtt_LED_setbrightness);
-      mqtt_Client.subscribe( mqtt_LED_setstatus);
-      mqtt_Client.subscribe( mqtt_LED_FadeSpeed);
-      mqtt_Client.subscribe( mqtt_LED_EffectSpeed);
-      mqtt_Client.subscribe( mqtt_LED_seteffect);
-      mqtt_Client.subscribe( mqtt_LED_Random_Effect);
-      mqtt_Client.subscribe( mqtt_LED_Random_Color);
-      mqtt_Client.subscribe( mqtt_LED_RainbowActive);
+      mqtt_Client.subscribe( mqtt_state_Power);
+      mqtt_Client.subscribe( mqtt_state_RandomColor);
+      mqtt_Client.subscribe( mqtt_state_RainbowColor);
+      mqtt_Client.subscribe( mqtt_state_RandomColorSync);
+      mqtt_Client.subscribe( mqtt_state_Color);
+      mqtt_Client.subscribe( mqtt_state_Brightness);
+      mqtt_Client.subscribe( mqtt_state_RandomEffect);
+      mqtt_Client.subscribe( mqtt_state_EffectSpeed);
+      mqtt_Client.subscribe( mqtt_state_FadeSpeed);
+      mqtt_Client.subscribe( mqtt_state_EffectNumber);
+      mqtt_Client.subscribe( mqtt_state_EffectDirection);
     } else {
       delay(500);
     }
@@ -88,115 +61,143 @@ void mqtt() {
 
 //------------------------------------- MQTT Callback -------------------------------------//
 void callback(char* topic, byte * payload, unsigned int length) {
+
+  //Set for Serial.print in Information Tab
+  NewData = true;
+
   char message[length + 1];
   for (int i = 0; i < length; i++) {
     message[i] = (char)payload[i];
   }
   message[length] = '\0';
 
-  //On / Off
-  if (String(mqtt_LED_setstatus).equals(topic)) {
+  //------------------- Parameter [mqtt_Power] -------------------//
+  if (String(mqtt_state_Power).equals(topic)) {
     if (strcmp(message, "ON") == 0) {
-      Power = true;
-      mqtt_Client.publish(mqtt_LED_getstatus, "ON");
+      mqtt_Power = true;
+      mqtt_Client.publish(mqtt_command_Power, "ON");
     }
     else {
-      Power = false;
-      mqtt_Client.publish(mqtt_LED_getstatus, "OFF");
+      mqtt_Power = false;
+      mqtt_Client.publish(mqtt_command_Power, "OFF");
     }
   }
 
-  //Color
-  if (String(mqtt_LED_setcolor).equals(topic)) {
-    char* red = strtok(message, ",");
+  //------------------- Parameter [mqtt_RandomColor] -------------------//
+  if (String(mqtt_state_RandomColor).equals(topic)) {
+    int temp_1Bit = Check1BitBoundaries(atoi(message));
+    if (temp_1Bit) {
+      mqtt_RandomColor = true;
+    } else {
+      mqtt_RandomColor = false;
+    }
+    mqtt_Client.publish(mqtt_command_RandomColor, message);
+  }
+
+  //------------------- Parameter [mqtt_RainbowColor] -------------------//
+  if (String(mqtt_state_RainbowColor).equals(topic)) {
+    int temp_1Bit = Check1BitBoundaries(atoi(message));
+    if (temp_1Bit) {
+      mqtt_RainbowColor = true;
+    } else {
+      mqtt_RainbowColor = false;
+    }
+    mqtt_Client.publish(mqtt_command_RainbowColor, message);
+  }
+
+  //------------------- Parameter [mqtt_RandomColorSync] -------------------//
+  if (String(mqtt_state_RandomColorSync).equals(topic)) {
+    int temp_1Bit = Check1BitBoundaries(atoi(message));
+    if (temp_1Bit) {
+      mqtt_RandomColorSync = true;
+    } else {
+      mqtt_RandomColorSync = false;
+    }
+    mqtt_Client.publish(mqtt_command_RandomColorSync, message);
+  }
+
+  //------------------- Parameter [mqtt_Red, mqtt_Green, mqtt_Blue] -------------------//
+  if (String(mqtt_state_Color).equals(topic)) {
+    char* red   = strtok(message, ",");
     char* green = strtok(NULL, ",");
-    char* blue = strtok(NULL, ",");
-    Color_Red = atoi(red);
-    Color_Green = atoi(green);
-    Color_Blue = atoi(blue);
-    char temp_buff[12];
-    snprintf(temp_buff, 12, "%d,%d,%d", Color_Red, Color_Green, Color_Blue);
-    mqtt_Client.publish(mqtt_LED_getcolor, temp_buff);
+    char* blue  = strtok(NULL, ",");
+
+    mqtt_Red    = Check8BitBoundaries(atoi(red));
+    mqtt_Green  = Check8BitBoundaries(atoi(green));
+    mqtt_Blue   = Check8BitBoundaries(atoi(blue));
+
+    mqtt_Client.publish(mqtt_command_Color, message);
   }
 
-  //Brightness
-  if (String(mqtt_LED_setbrightness).equals(topic)) {
-    Brightness = atoi(message);
-    char temp_buff[3];
-    itoa(Brightness, temp_buff, 10);
-    mqtt_Client.publish(mqtt_LED_getbrightness, temp_buff);
+  //------------------- Parameter [mqtt_Brightness] -------------------//
+  if (String(mqtt_state_Brightness).equals(topic)) {
+    mqtt_Brightness = Check8BitBoundaries(atoi(message));
+    mqtt_Client.publish(mqtt_command_Brightness, message);
   }
 
-  //Effect
-  if (String(mqtt_LED_seteffect).equals(topic)) {
-    Effect_Number = atoi(message);
-    char temp_buff[3];
-    itoa(Effect_Number, temp_buff, 10);
-    mqtt_Client.publish(mqtt_LED_geteffect, temp_buff);
-  }
-
-  //Effect Speed
-  if (String(mqtt_LED_EffectSpeed).equals(topic)) {
-    Effect_Speed = atoi(message);
-  }
-
-  //Fade Speed
-  if (String(mqtt_LED_FadeSpeed).equals(topic)) {
-    Fade_Speed = atoi(message);
-  }
-
-  //Random Color
-  if (String(mqtt_LED_Random_Color).equals(topic)) {
-    if (atoi(message) == 1) {
-      Random_Color = true;
+  //------------------- Parameter [mqtt_RandomEffect] -------------------//
+  if (String(mqtt_state_RandomEffect).equals(topic)) {
+    int temp_1Bit = Check1BitBoundaries(atoi(message));
+    if (temp_1Bit) {
+      mqtt_RandomEffect = true;
+    } else {
+      mqtt_RandomEffect = false;
     }
-    if (atoi(message) == 0) {
-      Random_Color = false;
-    }
+    mqtt_Client.publish(mqtt_command_RandomEffect, message);
   }
 
-  //Rainbow Active
-  if (String(mqtt_LED_RainbowActive).equals(topic)) {
-    if (atoi(message) == 1) {
-      Rainbow_Active = true;
-    }
-    if (atoi(message) == 0) {
-      Rainbow_Active = false;
-    }
+  //------------------- Parameter [mqtt_EffectSpeed] -------------------//
+  if (String(mqtt_state_EffectSpeed).equals(topic)) {
+    mqtt_EffectSpeed = Check8BitBoundaries(atoi(message));
+    mqtt_Client.publish(mqtt_command_EffectSpeed, message);
   }
 
-  //Random Effect
-  if (String(mqtt_LED_Random_Effect).equals(topic)) {
-    if (atoi(message) == 1) {
-      Random_Effect = true;
-    }
-    if (atoi(message) == 0) {
-      Random_Effect = false;
-    }
+  //------------------- Parameter [mqtt_FadeSpeed] -------------------//
+  if (String(mqtt_state_FadeSpeed).equals(topic)) {
+    mqtt_FadeSpeed = Check8BitBoundaries(atoi(message));
+    mqtt_Client.publish(mqtt_command_FadeSpeed, message);
   }
 
-#ifdef DEBUG_NETWORK
-  Serial.println("/--------Network Parameter--------/");
-  Serial.print("   Power         :");
-  Serial.println(Power);
-  Serial.print("   Color Red     :");
-  Serial.println(Color_Red);
-  Serial.print("   Color Green   :");
-  Serial.println(Color_Green);
-  Serial.print("   Color Blue    :");
-  Serial.println(Color_Blue);
-  Serial.print("   Brightness    :");
-  Serial.println(Brightness);
-  Serial.print("   Effect Number :");
-  Serial.println(Effect_Number);
-  Serial.print("   Effect Speed  :");
-  Serial.println(Effect_Speed);
-  Serial.print("   Random Color  :");
-  Serial.println(Random_Color);
-  Serial.print("   Random Effect :");
-  Serial.println(Random_Effect);
-  Serial.println("/---------------------------------/");
-#endif
+  //------------------- Parameter [mqtt_EffectNumber] -------------------//
+  if (String(mqtt_state_EffectNumber).equals(topic)) {
+    mqtt_EffectNumber = Check8BitBoundaries(atoi(message));
+    mqtt_Client.publish(mqtt_command_EffectNumber, message);
+  }
+
+
+  //------------------- Parameter [mqtt_EffectDirection] -------------------//
+  if (String(mqtt_state_EffectDirection).equals(topic)) {
+    mqtt_EffectDirection = CheckDirectionBoundaries(atoi(message));
+    mqtt_Client.publish(mqtt_command_EffectDirection, message);
+  }
 
 }
-//-------------------------------------End Callback--------------------------------------//
+
+//------------------------------------- Boundarie Check --------------------------------------//
+int Check8BitBoundaries(int x) {
+  if (x < 0) {
+    return 0;
+  } else if (x > 255) {
+    return 255;
+  } else {
+    return x;
+  }
+}
+
+int Check1BitBoundaries(int x) {
+  if (x < 0) {
+    return 0;
+  } else if (x > 1) {
+    return 1;
+  } else {
+    return x;
+  }
+}
+
+int CheckDirectionBoundaries(int x) {
+  if (x != 8 && x != 6 && x != 2 && x != 4) {
+    return 8;
+  } else {
+    return x;
+  }
+}
