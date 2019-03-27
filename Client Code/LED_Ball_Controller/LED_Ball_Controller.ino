@@ -11,14 +11,14 @@
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   22.03.2019  //Not Working
-  Version       :   1.1.1
+  Last Modifed  :   27.03.2019  //Semi Working
+  Version       :   1.1.2
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
                     - Add Boundry Check for MQTT Parameter
                     - Disable MQTT Parameter Sync depending on the used Effect to prevent overide
-                    - When gamma correction is used fix fade to new color with gamma correction
+                    - When gamma8 correction is used fix fade to new color with gamma8 correction
 
   Error Help    :   1. If the ball blinks red and black its an Effect Watchdog Error. If this happens an Effect to longer than 10 sec to complete
                     2. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
@@ -30,6 +30,8 @@
                       Overhaul of the State Machines and Code cleanup
                     Version 1.1.1
                       Cleanup in the Main and Network Tab. Added Debug Messages for Network in the Information Tab. And some small Bugfixes
+                    Version 1.1.2
+                      Finished Cleanup of the whole Programm. Fixed some Bugs.
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
@@ -61,15 +63,27 @@ boolean DevMode = true;
 #define COLOR_ORDER RGB                   //Color Order of the LEDs
 CRGB ledoutput[NUM_LEDS];                 //1D matrix that represents the real construction of the led strips. Gets pushed out to the Dataline
 CRGB leds[matrix_x][matrix_y];            //2D matrix that mimics the given Matrix on the ball, for easier effect programming. Gets converted into the 1D Matrix
-boolean activatedGammaCorrection = true;  //Activates or deactivates the gamma correction
+boolean activatedGammaCorrection = true;  //Activates or deactivates the gamma8 correction
 
 //--- Main State Machine ---//
 int MainState = 0;                  //Status of the Main State Machine
 int MainStateMemory = 0;            //Rember last Main State
 #define FPS 60                      //FPS with which the LED Matrix get pushed out
+unsigned long PrevMillis_PublishMatrix = 0;
 
 //--- Light State Machine ---//
 int LightState = 0;                 //Status of the Light State Machine
+
+//Normal Color
+
+//Rainbow Color
+int IndexRainbow = 0;
+
+//Random Color
+int IndexRandomColor = 0;
+int LastIndexRandomColor = 0;
+
+//Random Color Sync
 
 //--- Defines for Debugs ---//
 //Will be Serial printed in the Information Tab
@@ -182,8 +196,6 @@ int hueStartupReady = 0;
 boolean DummyLEDMatrix[matrix_x][matrix_y];
 
 //-----RandomColor
-int IndexRainbow = 0;
-int LastIndexRainbow = 0;
 boolean NextIndex = false;
 
 //-----DiscoBall
@@ -203,8 +215,8 @@ int PosYEffectRingRun = 0;
 int CounterNewFieldGen = 0;
 
 
-//gamma Array that replaces the calculate RGB Values in the function ShowMatrix if activated
-const uint8_t gamma[] = {
+//gamma8 Array that replaces the calculate RGB Values in the function ShowMatrix if activated
+const uint8_t gamma8[] = {
   0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  2,  2,  2,
   2,  3,  3,  3,  3,  4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,
   7,  8,  8,  9,  9, 10, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14,
@@ -445,19 +457,248 @@ void loop() {
 //--------------------------- Light State machine of the LED ball ---------------------------//
 void lightControl() {
 
+  boolean RandomColor;      //On / Off
+  boolean RainbowColor;      //On / Off
+  boolean RandomColorSync;   //On / Off
+
+  //Decides wich Color Effect is used
+  if (not RandomColor && not RainbowColor && not RandomColorSync) {
+    //Normal Color
+    ColorPickerNormal();
+  }
+  if (RandomColor && not RainbowColor && not RandomColorSync) {
+    //Random Color
+    ColorPickerRandom();
+  }
+  if (not RandomColor && RainbowColor && not RandomColorSync) {
+    //Rainbow Color
+    ColorPickerRainbow();
+  }
+  if (not RandomColor && not RainbowColor &&  RandomColorSync) {
+    //Random Color Sync
+    ColorPickerRandomSync();
+  }
+
+  //Decides wich Effect is used
+  if (Power) {
+    if (RandomEffect) {
+      LightState = 0;
+    } else {
+      LightState = 20;
+    }
+  } else {
+    LightState = 30;
+  }
+
+
+  //Light State machine
   switch (LightState) {
 
-    case 0:
+    case 10: //Random Effect Picker
+
       break;
 
-    case 10:
+    case 20: //Single Effect Picker
+      switch (EffectNumber) {
+
+        case 0: //Effect Black
+          black();
+          break;
+
+        case 1: //Effect Fill Solid
+          fillSolid();
+          break;
+
+        case 2: //Effect Rain Drop
+          RainDrop();
+          break;
+
+        case 3: //Effect Ring Run
+          RingRun();
+          break;
+
+        case 4: //Effect Disco Ball
+          DiscoBall();
+          break;
+
+        case 5: //Effect Disco Field
+          DiscoField();
+          break;
+
+        case 6: //Effect Rave
+          Rave();
+          break;
+
+        case 7: //Effect Equalizer
+          Equalizer();
+          break;
+
+        default: //Effect Status Effect Error
+          GeneralErrorEffect();
+          break;
+
+      }
       break;
 
-    default:
+    case 30: //No Power State
+      fadeall(40);
+      break;
+
+    default: //Default fade all
+      fadeall(40);
       break;
   }
 
 }
+
+//--------------------------- Normal Color ---------------------------//
+void ColorPickerNormal() {
+  //Normal COlor Picker
+  Red = mqtt_Red;
+  Green = mqtt_Green;
+  Blue = mqtt_Blue;
+  FadeColor();
+}
+
+
+//--------------------------- Random Color ---------------------------//
+void ColorPickerRandom() {
+  //Random Color Picker
+  unsigned long CurMillis_RandomColor = millis();
+  if (CurMillis_RandomColor - PrevMillis_RandomColor >= TimeOut_RandomColor) {
+    PrevMillis_RandomColor = CurMillis_RandomColor;
+    while (true) {
+      IndexRandomColor = int(random(0, 5));
+      if (IndexRandomColor != LastIndexRandomColor) {
+        break;
+      }
+    }
+    LastIndexRandomColor = IndexRandomColor;
+  }
+
+  TimeOut_FadeColor = 20; //Set constant fadespeed
+  switch (IndexRandomColor) {
+
+    case 0:
+      Red   = 255;
+      Green = 0;
+      Blue  = 0;
+      FadeColor();
+      break;
+
+    case 1:
+      Red   = 255;
+      Green = 255;
+      Blue  = 0;
+      FadeColor();
+      break;
+
+    case 2:
+      Red   = 0;
+      Green = 255;
+      Blue  = 0;
+      FadeColor();
+      break;
+
+    case 3:
+      Red   = 0;
+      Green = 255;
+      Blue  = 255;
+      FadeColor();
+      break;
+
+    case 4:
+      Red   = 0;
+      Green = 0;
+      Blue  = 255;
+      FadeColor();
+      break;
+
+    case 5:
+      Red   = 255;
+      Green = 0;
+      Blue  = 255;
+      FadeColor();
+      break;
+
+    default:
+      Red   = 0;
+      Green = 0;
+      Blue  = 0;
+      FadeColor();
+      break;
+
+  }
+}
+
+
+//--------------------------- Rainbow Color ---------------------------//
+void ColorPickerRainbow() {
+  //Rainbow procedure
+  switch (IndexRainbow) {
+    case 0:
+      Red   = 255;
+      Green = 0;
+      Blue  = 0;
+      NextIndex = FadeColor();
+      if (NextIndex) {
+        IndexRainbow = 1;
+      }
+      break;
+    case 1:
+      Red   = 255;
+      Green = 255;
+      Blue  = 0;
+      NextIndex = FadeColor();
+      if (NextIndex) {
+        IndexRainbow = 2;
+      }
+      break;
+    case 2:
+      Red   = 0;
+      Green = 255;
+      Blue  = 0;
+      NextIndex = FadeColor();
+      if (NextIndex) {
+        IndexRainbow = 3;
+      }
+      break;
+    case 3:
+      Red   = 0;
+      Green = 255;
+      Blue  = 255;
+      NextIndex = FadeColor();
+      if (NextIndex) {
+        IndexRainbow = 4;
+      }
+      break;
+    case 4:
+      Red   = 0;
+      Green = 0;
+      Blue  = 255;
+      NextIndex = FadeColor();
+      if (NextIndex) {
+        IndexRainbow = 5;
+      }
+      break;
+    case 5:
+      Red   = 255;
+      Green = 0;
+      Blue  = 255;
+      NextIndex = FadeColor();
+      if (NextIndex) {
+        IndexRainbow = 0;
+      }
+      break;
+  }
+}
+
+
+//--------------------------- Rainbow Color ---------------------------//
+void ColorPickerRandomSync() {
+
+}
+
 
 //--------------------------- Sync Parameter ---------------------------//
 void syncParameter() {
@@ -466,9 +707,9 @@ void syncParameter() {
   RandomColor       = mqtt_RandomColor;
   RainbowColor      = mqtt_RainbowColor;
   RandomColorSync   = mqtt_RandomColorSync;
-  Red               = mqtt_Red;
-  Green             = mqtt_Green;
-  Blue              = mqtt_Blue;
+  //Red             = mqtt_Red;   //
+  //Green           = mqtt_Green; //Gets set in Color Methodes
+  //Blue            = mqtt_Blue;  //
   Brightness        = mqtt_Brightness;
   RandomEffect      = mqtt_RandomEffect;
   EffectSpeed       = mqtt_EffectSpeed;

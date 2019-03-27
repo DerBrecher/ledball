@@ -2,75 +2,11 @@
   Information about Tap : Accommodates the lighting effects. Both status effects and finale effects the ball displays
 */
 
-//---------------------------Light Control---------------------------//
-void LightControl() {
-
-  if (Power) {
-    if (Random_Color) {
-      RandomColor();
-    } else {
-      FadeColor();
-    }
-
-    //Controls the Brightness (can get override by some Effects)
-    FadeBrightness();
-
-    //Effect State
-    if (Random_Effect) {
-      RandomEffect();
-    } else {
-      if (LightState != Effect_Number) {
-        black();
-      }
-      LightState = Effect_Number;
-      //Reset Rave Array
-      if (LightState != 6) {
-        InitRave = true;
-      }
-      //Light Sate
-      switch (LightState) {
-
-        case 0: black();
-          break;
-
-        case 1: fillSolid();
-          break;
-
-        case 2: RainDrop();
-          break;
-
-        case 3: RingRun();
-          break;
-
-        case 4: DiscoBall();
-          break;
-
-        case 5: DiscoField();
-          break;
-
-        case 6: Rave();
-          break;
-
-        case 7: Equalizer();
-          break;
-
-        default:
-          StatusEffectError();
-          break;
-      }
-    }
-
-  } else {
-    fadeall(40);
-
-  }
-}
 
 void ShowMatrix() {
   //Convert 2D Matrix into the 1D Matrix
   for (int i = 0 ; i < matrix_x; i++) {
     for (int u = 0; u < matrix_y; u++) {
-
       if (i % 2) {
         int reverse_U = matrix_y - u - 1;
         ledoutput[i * matrix_y + reverse_U] = leds[i][u];
@@ -83,150 +19,18 @@ void ShowMatrix() {
   //If Gamma Correction Activated overwrite LED Value
   if (activatedGammaCorrection) {
     for (int i = 0; i < NUM_LEDS; i++) {
-      uint8_t  temp_red   = ledoutput[i].r;
-      uint8_t  temp_green = ledoutput[i].g;
-      uint8_t  temp_blue  = ledoutput[i].b;
+      int tempRed = ledoutput[i].r;
+      int tempGreen = ledoutput[i].g;
+      int tempBlue = ledoutput[i].b;
       
-      ledoutput[i].r = gamma[temp_red];   //Gamma Correction Red
-      ledoutput[i].g = gamma[temp_green]; //Gamma Correction Green
-      ledoutput[i].b = gamma[temp_blue];  //Gamma Correction Blue
+      ledoutput[i].r = gamma8[tempRed];   //Gamma Correction Red
+      ledoutput[i].g = gamma8[tempGreen]; //Gamma Correction Green
+      ledoutput[i].b = gamma8[tempBlue];  //Gamma Correction Blue
     }
   }
 
   LEDS.setBrightness(actualBrightness);
   FastLED.show();
-}
-
-void RandomColor() {
-
-  if (Rainbow_Active) {
-    switch (IndexRainbow) {
-      case 0:
-        Color_Red   = 255;
-        Color_Green = 0;
-        Color_Blue  = 0;
-        NextIndex = FadeColor();
-        if (NextIndex) {
-          IndexRainbow = 1;
-        }
-        break;
-      case 1:
-        Color_Red   = 255;
-        Color_Green = 255;
-        Color_Blue  = 0;
-        NextIndex = FadeColor();
-        if (NextIndex) {
-          IndexRainbow = 2;
-        }
-        break;
-      case 2:
-        Color_Red   = 0;
-        Color_Green = 255;
-        Color_Blue  = 0;
-        NextIndex = FadeColor();
-        if (NextIndex) {
-          IndexRainbow = 3;
-        }
-        break;
-      case 3:
-        Color_Red   = 0;
-        Color_Green = 255;
-        Color_Blue  = 255;
-        NextIndex = FadeColor();
-        if (NextIndex) {
-          IndexRainbow = 4;
-        }
-        break;
-      case 4:
-        Color_Red   = 0;
-        Color_Green = 0;
-        Color_Blue  = 255;
-        NextIndex = FadeColor();
-        if (NextIndex) {
-          IndexRainbow = 5;
-        }
-        break;
-      case 5:
-        Color_Red   = 255;
-        Color_Green = 0;
-        Color_Blue  = 255;
-        NextIndex = FadeColor();
-        if (NextIndex) {
-          IndexRainbow = 0;
-        }
-        break;
-    }
-  } else {
-    unsigned long CurMillis_RandomColor = millis();
-    if (CurMillis_RandomColor - PrevMillis_RandomColor >= TimeOut_RandomColor) {
-      PrevMillis_RandomColor = CurMillis_RandomColor;
-      while (true) {
-        IndexRainbow = int(random(0, 5));
-        if (IndexRainbow != LastIndexRainbow) {
-          break;
-        }
-      }
-      LastIndexRainbow = IndexRainbow;
-    }
-
-    TimeOut_FadeColor = 20; //Set constant fadespeed
-    switch (IndexRainbow) {
-
-      case 0:
-        Color_Red   = 255;
-        Color_Green = 0;
-        Color_Blue  = 0;
-        FadeColor();
-        break;
-
-      case 1:
-        Color_Red   = 255;
-        Color_Green = 255;
-        Color_Blue  = 0;
-        FadeColor();
-        break;
-
-      case 2:
-        Color_Red   = 0;
-        Color_Green = 255;
-        Color_Blue  = 0;
-        FadeColor();
-        break;
-
-      case 3:
-        Color_Red   = 0;
-        Color_Green = 255;
-        Color_Blue  = 255;
-        FadeColor();
-        break;
-
-      case 4:
-        Color_Red   = 0;
-        Color_Green = 0;
-        Color_Blue  = 255;
-        FadeColor();
-        break;
-
-      case 5:
-        Color_Red   = 255;
-        Color_Green = 0;
-        Color_Blue  = 255;
-        FadeColor();
-        break;
-
-      default:
-        Color_Red   = 0;
-        Color_Green = 0;
-        Color_Blue  = 0;
-        FadeColor();
-        break;
-
-    }
-  }
-}
-
-void RandomEffect() {
-
 }
 
 boolean FadeColor() {
@@ -235,11 +39,11 @@ boolean FadeColor() {
   if (CurMillis_FadeColor - PrevMillis_FadeColor >= TimeOut_FadeColor) {
     PrevMillis_FadeColor = CurMillis_FadeColor;
 
-    if (prevColorRed != Color_Red || prevColorGreen != Color_Green || prevColorBlue != Color_Blue) {
+    if (prevColorRed != Red || prevColorGreen != Green || prevColorBlue != Blue) {
 
-      int distanceRed   = Color_Red - actualColorRed;
-      int distanceGreen = Color_Green - actualColorRedactualColorGreen;
-      int distanceBlue  = Color_Blue - actualColorBlue;
+      int distanceRed   = Red - actualColorRed;
+      int distanceGreen = Green - actualColorGreen;
+      int distanceBlue  = Blue - actualColorBlue;
 
       int maxDistance = max(abs(distanceRed), abs(distanceGreen));
       maxDistance = max(maxDistance, abs(distanceBlue));
@@ -250,32 +54,32 @@ boolean FadeColor() {
       FadeStepGreen = distanceGreen * StepSize / maxDistance;
       FadeStepBlue  = distanceBlue * StepSize / maxDistance;
 
-      prevColorRed   = Color_Red;
-      prevColorGreen = Color_Green;
-      prevColorBlue  = Color_Blue;
+      prevColorRed   = Red;
+      prevColorGreen = Green;
+      prevColorBlue  = Blue;
     }
 
     //Color Fade
-    if (Color_Red != int(actualColorRed)) {
+    if (Red != int(actualColorRed)) {
       actualColorRed += FadeStepRed;
-      if ((FadeStepRed > 0 && Color_Red < actualColorRed) || (FadeStepRed < 0 && Color_Red > actualColorRed)) {
-        actualColorRed = Color_Red;
+      if ((FadeStepRed > 0 && Red < actualColorRed) || (FadeStepRed < 0 && Red > actualColorRed)) {
+        actualColorRed = Red;
       }
     }
-    if (Color_Green != int(actualColorRedactualColorGreen)) {
-      actualColorRedactualColorGreen += FadeStepGreen;
-      if ((FadeStepGreen > 0 && Color_Green < actualColorRedactualColorGreen) || (FadeStepGreen < 0 && Color_Green > actualColorRedactualColorGreen)) {
-        actualColorRedactualColorGreen = Color_Green;
+    if (Green != int(actualColorGreen)) {
+      actualColorGreen += FadeStepGreen;
+      if ((FadeStepGreen > 0 && Green < actualColorGreen) || (FadeStepGreen < 0 && Green > actualColorGreen)) {
+        actualColorGreen = Green;
       }
     }
-    if (Color_Blue != int(actualColorBlue)) {
+    if (Blue != int(actualColorBlue)) {
       actualColorBlue += FadeStepBlue;
-      if ((FadeStepBlue > 0 && Color_Blue < actualColorBlue) || (FadeStepBlue < 0 && Color_Blue > actualColorBlue)) {
-        actualColorBlue = Color_Blue;
+      if ((FadeStepBlue > 0 && Blue < actualColorBlue) || (FadeStepBlue < 0 && Blue > actualColorBlue)) {
+        actualColorBlue = Blue;
       }
     }
   }
-  if ((int(actualColorRed) == Color_Red) && (int(actualColorRedactualColorGreen) == Color_Green) && (int(actualColorBlue) == Color_Blue)) {
+  if ((int(actualColorRed) == Red) && (int(actualColorGreen) == Green) && (int(actualColorBlue) == Blue)) {
     return true;
   } else {
     return false;
@@ -307,7 +111,7 @@ void fillSolid() {
     PrevMillis_FPS = CurMillis_FPS;
     for (int i = 0 ; i < matrix_x; i++) {
       for (int u = 0; u < matrix_y; u++) {
-        leds[i][u] = CRGB(actualColorRed, actualColorRedactualColorGreen, actualColorBlue);
+        leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
       }
     }
   }
@@ -328,7 +132,7 @@ void RainDrop() {
   //ToDo: Add Direction
 
   unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + Effect_Speed)) {
+  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
     PrevMillis_FPS = CurMillis_FPS;
 
     //Parameter
@@ -338,10 +142,10 @@ void RainDrop() {
     for (int u = (matrix_y - 2); u >= 0; u--) {
       for (int i = 0; i < matrix_x; i++) {
         if (ledActive(leds[i][u + 1])) {
-          leds[i][u + 1].nscale8(Fade_Speed);
+          leds[i][u + 1].nscale8(FadeSpeed);
         } else {
           leds[i][u + 1] = leds[i][u];
-          leds[i][u].nscale8(Fade_Speed);
+          leds[i][u].nscale8(FadeSpeed);
         }
       }
     }
@@ -354,7 +158,7 @@ void RainDrop() {
     //Generate new Random Pixels on Top
     for (int i = 0; i < NumberRainDrops; i++) {
       int RandomPixel = (int)random(0, matrix_x);
-      leds[RandomPixel][0] = CRGB(actualColorRed, actualColorRedactualColorGreen, actualColorBlue);
+      leds[RandomPixel][0] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
     }
   }
 }
@@ -363,35 +167,35 @@ void RingRun() {
   int DirectionRingRun = 2; //0 = right // 1 = left
 
   unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + Effect_Speed)) {
+  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
     PrevMillis_FPS = CurMillis_FPS;
     switch (DirectionRingRun) {
 
       case 0: //Right
         for (int u = 0; u < matrix_y; u++) {
-          leds[PosXEffectRingRun][u] = CRGB(actualColorRed, actualColorRedactualColorGreen, actualColorBlue);
+          leds[PosXEffectRingRun][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
         break;
 
       case 1: //left
         for (int u = 0; u < matrix_y; u++) {
-          leds[(matrix_x - 1) - PosXEffectRingRun][u] = CRGB(actualColorRed, actualColorRedactualColorGreen, actualColorBlue);
+          leds[(matrix_x - 1) - PosXEffectRingRun][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
         break;
 
       case 2:
         for (int i = 0; i < matrix_x; i++) {
-          leds[i][PosYEffectRingRun] = CRGB(actualColorRed, actualColorRedactualColorGreen, actualColorBlue);
+          leds[i][PosYEffectRingRun] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
         break;
 
       case 3:
         for (int i = 0; i < matrix_x; i++) {
-          leds[i][(matrix_y - 1) - PosYEffectRingRun] = CRGB(actualColorRed, actualColorRedactualColorGreen, actualColorBlue);
+          leds[i][(matrix_y - 1) - PosYEffectRingRun] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
         break;
     }
-    fadeall(Fade_Speed);
+    fadeall(FadeSpeed);
     PosXEffectRingRun++;
     if (PosXEffectRingRun > matrix_x - 1) {
       PosXEffectRingRun = 0;
@@ -405,15 +209,15 @@ void RingRun() {
 
 void DiscoBall() {
   unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + Effect_Speed)) {
+  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
     PrevMillis_FPS = CurMillis_FPS;
     for (int k = 0; k < NumberPixels; k++) {
       int x = random(0, matrix_x);
       int y = random(0, matrix_y);
-      leds[x][y] = CRGB(actualColorRed, actualColorRedactualColorGreen, actualColorBlue);
+      leds[x][y] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
     }
     ShowMatrix();
-    fadeall(Fade_Speed);
+    fadeall(FadeSpeed);
   }
 }
 
@@ -443,7 +247,7 @@ void DiscoField() {
 
       for (int i = int(StepsX * RandomFieldX); i < int(StepsX * RandomFieldX + StepsX); i++) {
         for (int u = int(StepsY * RandomFieldY); u < int(StepsY  * RandomFieldY + StepsY); u++) {
-          leds[i][u] = CRGB(actualColorRed, actualColorRedactualColorGreen, actualColorBlue);
+          leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
       }
     }
@@ -451,10 +255,10 @@ void DiscoField() {
   }
 
   unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + Effect_Speed)) {
+  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
     PrevMillis_FPS = CurMillis_FPS;
     ShowMatrix();
-    fadeall(Fade_Speed);
+    fadeall(FadeSpeed);
     CounterNewFieldGen++;
   }
 
@@ -475,7 +279,7 @@ void Rave() {
   } else {
     //Perma Shift Array right
     unsigned long CurMillis_FPS = millis();
-    if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + Effect_Speed)) {
+    if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
       PrevMillis_FPS = CurMillis_FPS;
       ShowMatrix();
       ShiftArrayToLeft();
