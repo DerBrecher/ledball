@@ -4,6 +4,18 @@
 
 //------------------------------------- WiFi Control -------------------------------------//
 void wifi() {
+  /*
+    WiFi.begin(SSIDWZ, WPA2WZ);
+    while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    }
+    Serial.println("");
+    Serial.println("WiFi connected");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+  */
+
   delay(1);
   //Start Wifi Connection
   if (StartWifiConnection) {
@@ -38,10 +50,11 @@ void wifi() {
 
 //------------------------------------- MQTT Control -------------------------------------//
 void mqtt() {
-  delay(50);
+
   //Try to Reconnect to MQTT and subscribe to the Channels
-  while (!mqtt_Client.connected()) {
+  if (!mqtt_Client.connected() and WiFi.status() == WL_CONNECTED) {
     if (mqtt_Client.connect(mqtt_client_name, mqtt_username, mqtt_password)) {
+      Serial.println("Start channel subscription");
       mqtt_Client.subscribe( mqtt_state_Power);
       mqtt_Client.subscribe( mqtt_state_RandomColor);
       mqtt_Client.subscribe( mqtt_state_RainbowColor);
@@ -53,10 +66,12 @@ void mqtt() {
       mqtt_Client.subscribe( mqtt_state_FadeSpeed);
       mqtt_Client.subscribe( mqtt_state_EffectNumber);
       mqtt_Client.subscribe( mqtt_state_EffectDirection);
+      Serial.println("Finished channel subscription");
     } else {
-      delay(500);
+      Serial.println("No MQTT subscribtion possible");
     }
   }
+
 }
 
 //------------------------------------- MQTT Callback -------------------------------------//
@@ -64,6 +79,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //Set for Serial.print in Information Tab
   NewData = true;
+  char NullBuffer[1] = {'0'};
 
   char message[length + 1];
   for (int i = 0; i < length; i++) {
@@ -87,33 +103,52 @@ void callback(char* topic, byte * payload, unsigned int length) {
   if (String(mqtt_state_RandomColor).equals(topic)) {
     int temp_1Bit = Check1BitBoundaries(atoi(message));
     if (temp_1Bit) {
-      mqtt_RandomColor = true;
+      mqtt_RandomColor     = true;
+      mqtt_RainbowColor    = false;
+      mqtt_RandomColorSync = false;
     } else {
-      mqtt_RandomColor = false;
+      mqtt_RandomColor     = false;
+      mqtt_RainbowColor    = false;
+      mqtt_RandomColorSync = false;
     }
-    mqtt_Client.publish(mqtt_command_RandomColor, message);
+
+    mqtt_Client.publish(mqtt_command_RandomColor, message);         //State of Random Color
+    mqtt_Client.publish(mqtt_command_RainbowColor, NullBuffer);     //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_command_RandomColorSync, NullBuffer);  //Turn of Random Color Sync
   }
 
   //------------------- Parameter [mqtt_RainbowColor] -------------------//
   if (String(mqtt_state_RainbowColor).equals(topic)) {
     int temp_1Bit = Check1BitBoundaries(atoi(message));
     if (temp_1Bit) {
-      mqtt_RainbowColor = true;
+      mqtt_RandomColor     = false;
+      mqtt_RainbowColor    = true;
+      mqtt_RandomColorSync = false;
     } else {
-      mqtt_RainbowColor = false;
+      mqtt_RandomColor     = false;
+      mqtt_RainbowColor    = false;
+      mqtt_RandomColorSync = false;
     }
-    mqtt_Client.publish(mqtt_command_RainbowColor, message);
+    mqtt_Client.publish(mqtt_command_RandomColor, NullBuffer);      //Turn of Random Color
+    mqtt_Client.publish(mqtt_command_RainbowColor, message);        //State of Rainbow Color
+    mqtt_Client.publish(mqtt_command_RandomColorSync, NullBuffer);  //Turn of Random Color Sync
   }
 
   //------------------- Parameter [mqtt_RandomColorSync] -------------------//
   if (String(mqtt_state_RandomColorSync).equals(topic)) {
     int temp_1Bit = Check1BitBoundaries(atoi(message));
     if (temp_1Bit) {
+      mqtt_RandomColor     = false;
+      mqtt_RainbowColor    = false;
       mqtt_RandomColorSync = true;
     } else {
+      mqtt_RandomColor     = false;
+      mqtt_RainbowColor    = false;
       mqtt_RandomColorSync = false;
     }
-    mqtt_Client.publish(mqtt_command_RandomColorSync, message);
+    mqtt_Client.publish(mqtt_command_RandomColor, NullBuffer);  //Turn of Random Color
+    mqtt_Client.publish(mqtt_command_RainbowColor, NullBuffer); //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_command_RandomColorSync, message); //State of Random Color Sync
   }
 
   //------------------- Parameter [mqtt_Red, mqtt_Green, mqtt_Blue] -------------------//

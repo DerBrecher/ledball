@@ -6,7 +6,21 @@ void printer() {
 
   //--------------------- Section from Network Tab ---------------------//
 #ifdef DEBUG_NETWORK
-  if (NewData) {
+  //Check if New Data is available and its different from the last Data
+  if (NewData and (
+        mqtt_Power                != mem_mqtt_Power or
+        mem_mqtt_RandomColor      != mqtt_RandomColor or
+        mem_mqtt_RainbowColor     != mqtt_RainbowColor or
+        mem_mqtt_RandomColorSync  != mqtt_RandomColorSync or
+        mem_mqtt_Red              != mqtt_Red or
+        mem_mqtt_Green            != mqtt_Green or
+        mem_mqtt_Blue             != mqtt_Blue or
+        mem_mqtt_Brightness       != mqtt_Brightness or
+        mem_mqtt_RandomEffect     != mqtt_RandomEffect or
+        mem_mqtt_EffectSpeed      != mqtt_EffectSpeed or
+        mem_mqtt_FadeSpeed        != mqtt_FadeSpeed or
+        mem_mqtt_EffectNumber     != mqtt_EffectNumber or
+        mem_mqtt_EffectDirection  != mqtt_EffectDirection)) {
     Serial.println("/--------Network Parameter--------/");
     Serial.print("  Power            :");
     Serial.println(mqtt_Power);
@@ -37,6 +51,23 @@ void printer() {
     Serial.println("/---------------------------------/");
     //Reset
     NewData = false;
+
+    mem_mqtt_Power            = mqtt_Power;
+
+    mem_mqtt_RandomColor      = mqtt_RandomColor;
+    mem_mqtt_RainbowColor     = mqtt_RainbowColor;
+    mem_mqtt_RandomColorSync  = mqtt_RandomColorSync;
+    mem_mqtt_Red              = mqtt_Red;
+    mem_mqtt_Green            = mqtt_Green;
+    mem_mqtt_Blue             = mqtt_Blue;
+
+    mem_mqtt_Brightness       = mqtt_Brightness;
+
+    mem_mqtt_RandomEffect     = mqtt_RandomEffect;
+    mem_mqtt_EffectSpeed      = mqtt_EffectSpeed;
+    mem_mqtt_FadeSpeed        = mqtt_FadeSpeed;
+    mem_mqtt_EffectNumber     = mqtt_EffectNumber;
+    mem_mqtt_EffectDirection  = mqtt_EffectDirection;
   }
 #endif
 

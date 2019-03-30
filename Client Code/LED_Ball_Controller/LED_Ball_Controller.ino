@@ -7,12 +7,19 @@
 //Include Secret Header
 #include <secrets.h>
 
+//for Serial print Startup Info
+#define Name        "Led Ball Controller"
+#define Programmer  "Nico Weidenfeller"
+#define Created     "21.02.2019"
+#define LastModifed "30.03.2019"
+#define Version     "1.1.3"
+
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   27.03.2019  //Semi Working
-  Version       :   1.1.2
+  Last Modifed  :   27.03.2019
+  Version       :   1.1.3
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
@@ -32,6 +39,8 @@
                       Cleanup in the Main and Network Tab. Added Debug Messages for Network in the Information Tab. And some small Bugfixes
                     Version 1.1.2
                       Finished Cleanup of the whole Programm. Fixed some Bugs.
+                    Version 1.1.3
+                      Fixed MQTT bug with Channel publish crashing the esp. Fixed WiFi and MQTT connection and auto restart
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
@@ -108,7 +117,7 @@ uint8_t Brightness;       //0 - 255
 
 //Controls the Effect show on the Ball
 boolean RandomEffect;     //On / Off
-uint8_t EffectSpeed;      //0 - 255
+uint8_t EffectSpeed;      //0 - 100
 uint8_t FadeSpeed;        //0 - 255
 uint8_t EffectNumber;     //0 - 255
 uint8_t EffectDirection;  // 8 == Up // 6 == Right // 2 == Down // 4 == Left
@@ -319,6 +328,24 @@ uint8_t mqtt_FadeSpeed;
 uint8_t mqtt_EffectNumber;
 uint8_t mqtt_EffectDirection;
 
+//Memory from the Parameter
+boolean mem_mqtt_Power;
+
+boolean mem_mqtt_RandomColor;
+boolean mem_mqtt_RainbowColor;
+boolean mem_mqtt_RandomColorSync;
+uint8_t mem_mqtt_Red;
+uint8_t mem_mqtt_Green;
+uint8_t mem_mqtt_Blue;
+
+uint8_t mem_mqtt_Brightness;
+
+boolean mem_mqtt_RandomEffect;
+uint8_t mem_mqtt_EffectSpeed;
+uint8_t mem_mqtt_FadeSpeed;
+uint8_t mem_mqtt_EffectNumber;
+uint8_t mem_mqtt_EffectDirection;
+
 //WiFi
 boolean StartWifiConnection = true;
 boolean ShowNoWifiEffect    = false;
@@ -340,10 +367,20 @@ unsigned long TimeOut_NoWiFiCounter     = 300; // 0.50 Seconds
 void setup() {
   Serial.begin(115200);
   delay(100);
-  Serial.println("Start Setup");
-  Serial.println("LED Ball Version 1.0");
-  Serial.println("Programmer : Nico Weidenfeller");
+
+  Serial.print("Name          : ");
+  Serial.println(Name);
+  Serial.print("Programmer    : ");
+  Serial.println(Programmer);
+  Serial.print("Created       : ");
+  Serial.println(Created);
+  Serial.print("Last Modifed  : ");
+  Serial.println(LastModifed);
+  Serial.print("Version       : ");
+  Serial.println(Version);
   Serial.println("");
+
+  Serial.println("Start Setup");
 
   Serial.println("Set MQTT Parameter");
   mqtt_Client.setServer(mqtt_server, mqtt_port);
@@ -381,15 +418,16 @@ void loop() {
 
   //Monitoring Wifi Connection. If it doesnt reconnect in 300ms * 10 then restart ESP
   //Reconnect to WiFi if it loses connection. After that try to connect to MQTT
+  if (!mqtt_Client.connected()) {
+    mqtt();
+  } else {
+    MainState = MainStateMemory;
+  }
+
   if (WiFi.status() != WL_CONNECTED) {
     wifi();
     MainStateMemory = MainState;
     MainState = 999;
-  } else {
-    if (!mqtt_Client.connected()) {
-      mqtt();
-    }
-    MainState = MainStateMemory;
   }
 
   //Serial Print for Information and Diagnose
