@@ -4,7 +4,6 @@
 
 void printer() {
 
-  //--------------------- Section from Network Tab ---------------------//
 #ifdef DEBUG_NETWORK
   //Check if New Data is available and its different from the last Data
   if (NewData and (
@@ -22,31 +21,31 @@ void printer() {
         mem_mqtt_EffectNumber     != mqtt_EffectNumber or
         mem_mqtt_EffectDirection  != mqtt_EffectDirection)) {
     Serial.println("/--------Network Parameter--------/");
-    Serial.print("  Power            :");
+    Serial.print("  Power            : ");
     Serial.println(mqtt_Power);
-    Serial.print("  RandomColor      :");
+    Serial.print("  RandomColor      : ");
     Serial.println(mqtt_RandomColor);
-    Serial.print("  Rainbow Color    :");
+    Serial.print("  Rainbow Color    : ");
     Serial.println(mqtt_RainbowColor);
-    Serial.print("  Random ColorSync :");
+    Serial.print("  Random ColorSync : ");
     Serial.println(mqtt_RandomColorSync);
-    Serial.print("  Color Red        :");
+    Serial.print("  Color Red        : ");
     Serial.println(mqtt_Red);
-    Serial.print("  Color Green      :");
+    Serial.print("  Color Green      : ");
     Serial.println(mqtt_Green);
-    Serial.print("  Color Blue       :");
+    Serial.print("  Color Blue       : ");
     Serial.println(mqtt_Blue);
-    Serial.print("  Brightness       :");
+    Serial.print("  Brightness       : ");
     Serial.println(mqtt_Brightness);
-    Serial.print("  Random Effect    :");
+    Serial.print("  Random Effect    : ");
     Serial.println(mqtt_RandomEffect);
-    Serial.print("  Effect Speed     :");
+    Serial.print("  Effect Speed     : ");
     Serial.println(mqtt_EffectSpeed);
-    Serial.print("  Fade Speed       :");
+    Serial.print("  Fade Speed       : ");
     Serial.println(mqtt_FadeSpeed);
-    Serial.print("  Effect Number    :");
+    Serial.print("  Effect Number    : ");
     Serial.println(mqtt_EffectNumber);
-    Serial.print("  Effect Direction :");
+    Serial.print("  Effect Direction : ");
     Serial.println(mqtt_EffectDirection);
     Serial.println("/---------------------------------/");
     //Reset
@@ -69,6 +68,73 @@ void printer() {
     mem_mqtt_EffectNumber     = mqtt_EffectNumber;
     mem_mqtt_EffectDirection  = mqtt_EffectDirection;
   }
+#endif
+
+
+#ifdef DEBUG_MAIN_STATE
+  //Prints the state of the main state machine if it changes
+  if (mem_MainState != MainState) {
+    Serial.println("/------------Main State-----------/");
+    Serial.print("  Main State       : ");
+    Serial.println(MainState);
+    Serial.println("/---------------------------------/");
+  }
+  //Reset
+  mem_MainState = MainState;
+#endif
+
+
+#ifdef DEBUG_LIGHT_STATE
+  //Prints the state of the light state machine if it changes
+  if (mem_LightState != LightState) {
+    Serial.println("/-----------Light State-----------/");
+    Serial.print("  Light State      : ");
+    Serial.println(LightState);
+    Serial.println("/---------------------------------/");
+  }
+  //Reset
+  mem_LightState = LightState;
+#endif
+
+
+#ifdef DEBUG_EFFECTS
+  //Prints the current effect
+  if (mem_EffectNumber != EffectNumber) {
+    Serial.println("/--------------Effect-------------/");
+    Serial.print("  Effect           : ");
+    switch (EffectNumber) {
+      case 0 : Serial.println("Black");
+        break;
+      case 1 : Serial.println("Fill Solid");
+        break;
+      case 2 : Serial.println("Rain Drop");
+        break;
+      case 3 : Serial.println("Ring Run");
+        break;
+      case 4 : Serial.println("Disco Ball");
+        break;
+      case 5 : Serial.println("Disco Field");
+        break;
+      case 6 : Serial.println("Rave");
+        break;
+      case 7 : Serial.println("Equalizer");
+        break;
+      case 8 : Serial.println("");
+        break;
+      case 9: Serial.println("");
+        break;
+      case 10: Serial.println("");
+        break;
+      case 11: Serial.println("");
+        break;
+
+      default: Serial.println("General Error Effect");
+        break;
+    }
+    Serial.println("/---------------------------------/");
+  }
+  //Reset
+  mem_EffectNumber = EffectNumber;
 #endif
 
 }

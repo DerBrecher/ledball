@@ -11,15 +11,15 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "30.03.2019"
-#define Version     "1.1.3"
+#define LastModifed "31.03.2019"
+#define Version     "1.1.4"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   27.03.2019
-  Version       :   1.1.3
+  Last Modifed  :   31.03.2019
+  Version       :   1.1.4
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
@@ -41,6 +41,8 @@
                       Finished Cleanup of the whole Programm. Fixed some Bugs.
                     Version 1.1.3
                       Fixed MQTT bug with Channel publish crashing the esp. Fixed WiFi and MQTT connection and auto restart
+                    Cersion 1.1.4
+                      Fixed direction state and publish command from the color modes for MQTT
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
@@ -96,9 +98,10 @@ int LastIndexRandomColor = 0;
 
 //--- Defines for Debugs ---//
 //Will be Serial printed in the Information Tab
-#define DEBUG_MAIN
-#define DEBUG_EFFECTS
-#define DEBUG_NETWORK
+#define DEBUG_MAIN_STATE    //Prints Main State
+#define DEBUG_LIGHT_STATE   //Prints Light State
+#define DEBUG_EFFECTS       //Prints 
+//#define DEBUG_NETWORK       //Prints MQTT Parameter
 
 //LED Ball Control Parameter
 //Truns the Ball ON / OFF
@@ -248,7 +251,32 @@ const uint8_t gamma8[] = {
 //------------------------------------------ INFORMATION ------------------------------------------//
 //*************************************************************************************************//
 
+//Memory from the Parameter
+boolean mem_mqtt_Power;
 
+boolean mem_mqtt_RandomColor;
+boolean mem_mqtt_RainbowColor;
+boolean mem_mqtt_RandomColorSync;
+uint8_t mem_mqtt_Red;
+uint8_t mem_mqtt_Green;
+uint8_t mem_mqtt_Blue;
+
+uint8_t mem_mqtt_Brightness;
+
+boolean mem_mqtt_RandomEffect;
+uint8_t mem_mqtt_EffectSpeed;
+uint8_t mem_mqtt_FadeSpeed;
+uint8_t mem_mqtt_EffectNumber;
+uint8_t mem_mqtt_EffectDirection;
+
+//Memory form the Main State
+int mem_MainState;
+
+//Memory form the Light State
+int mem_LightState;
+
+//memory form the Effect
+int mem_EffectNumber;
 
 //*************************************************************************************************//
 //-------------------------------------------- NETWORK --------------------------------------------//
@@ -328,23 +356,6 @@ uint8_t mqtt_FadeSpeed;
 uint8_t mqtt_EffectNumber;
 uint8_t mqtt_EffectDirection;
 
-//Memory from the Parameter
-boolean mem_mqtt_Power;
-
-boolean mem_mqtt_RandomColor;
-boolean mem_mqtt_RainbowColor;
-boolean mem_mqtt_RandomColorSync;
-uint8_t mem_mqtt_Red;
-uint8_t mem_mqtt_Green;
-uint8_t mem_mqtt_Blue;
-
-uint8_t mem_mqtt_Brightness;
-
-boolean mem_mqtt_RandomEffect;
-uint8_t mem_mqtt_EffectSpeed;
-uint8_t mem_mqtt_FadeSpeed;
-uint8_t mem_mqtt_EffectNumber;
-uint8_t mem_mqtt_EffectDirection;
 
 //WiFi
 boolean StartWifiConnection = true;
@@ -420,14 +431,17 @@ void loop() {
   //Reconnect to WiFi if it loses connection. After that try to connect to MQTT
   if (!mqtt_Client.connected()) {
     mqtt();
-  } else {
-    MainState = MainStateMemory;
   }
 
   if (WiFi.status() != WL_CONNECTED) {
     wifi();
-    MainStateMemory = MainState;
-    MainState = 999;
+    if (MainState != 999) {
+      MainStateMemory = MainState;
+      MainState = 999;
+    }
+  }
+  if (WiFi.status() == WL_CONNECTED and MainState == 999) {
+    MainState = MainStateMemory;
   }
 
   //Serial Print for Information and Diagnose

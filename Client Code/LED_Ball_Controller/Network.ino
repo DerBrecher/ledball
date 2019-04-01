@@ -4,18 +4,7 @@
 
 //------------------------------------- WiFi Control -------------------------------------//
 void wifi() {
-  /*
-    WiFi.begin(SSIDWZ, WPA2WZ);
-    while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-    }
-    Serial.println("");
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-  */
-
+ 
   delay(1);
   //Start Wifi Connection
   if (StartWifiConnection) {
@@ -113,8 +102,8 @@ void callback(char* topic, byte * payload, unsigned int length) {
     }
 
     mqtt_Client.publish(mqtt_command_RandomColor, message);         //State of Random Color
-    mqtt_Client.publish(mqtt_command_RainbowColor, NullBuffer);     //Turn of Rainbow Color
-    mqtt_Client.publish(mqtt_command_RandomColorSync, NullBuffer);  //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_command_RainbowColor, "0");     //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_command_RandomColorSync, "0");  //Turn of Random Color Sync
   }
 
   //------------------- Parameter [mqtt_RainbowColor] -------------------//
@@ -129,9 +118,9 @@ void callback(char* topic, byte * payload, unsigned int length) {
       mqtt_RainbowColor    = false;
       mqtt_RandomColorSync = false;
     }
-    mqtt_Client.publish(mqtt_command_RandomColor, NullBuffer);      //Turn of Random Color
+    mqtt_Client.publish(mqtt_command_RandomColor, "0");      //Turn of Random Color
     mqtt_Client.publish(mqtt_command_RainbowColor, message);        //State of Rainbow Color
-    mqtt_Client.publish(mqtt_command_RandomColorSync, NullBuffer);  //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_command_RandomColorSync, "0");  //Turn of Random Color Sync
   }
 
   //------------------- Parameter [mqtt_RandomColorSync] -------------------//
@@ -146,8 +135,8 @@ void callback(char* topic, byte * payload, unsigned int length) {
       mqtt_RainbowColor    = false;
       mqtt_RandomColorSync = false;
     }
-    mqtt_Client.publish(mqtt_command_RandomColor, NullBuffer);  //Turn of Random Color
-    mqtt_Client.publish(mqtt_command_RainbowColor, NullBuffer); //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_command_RandomColor, "0");  //Turn of Random Color
+    mqtt_Client.publish(mqtt_command_RainbowColor, "0"); //Turn of Rainbow Color
     mqtt_Client.publish(mqtt_command_RandomColorSync, message); //State of Random Color Sync
   }
 
@@ -199,13 +188,23 @@ void callback(char* topic, byte * payload, unsigned int length) {
     mqtt_Client.publish(mqtt_command_EffectNumber, message);
   }
 
-
   //------------------- Parameter [mqtt_EffectDirection] -------------------//
   if (String(mqtt_state_EffectDirection).equals(topic)) {
-    mqtt_EffectDirection = CheckDirectionBoundaries(atoi(message));
+    int TempDirection;
+    if (strcmp(message, "Oben") == 0) {
+      TempDirection = 8;
+    } else if (strcmp(message, "Links") == 0) {
+      TempDirection = 4;
+    } else if (strcmp(message, "Unten") == 0) {
+      TempDirection = 2;
+    } else if (strcmp(message, "Rechts") == 0) {
+      TempDirection = 6;
+    } else {
+      TempDirection = 8;
+    }
+    mqtt_EffectDirection = CheckDirectionBoundaries(TempDirection);
     mqtt_Client.publish(mqtt_command_EffectDirection, message);
   }
-
 }
 
 //------------------------------------- Boundarie Check --------------------------------------//
