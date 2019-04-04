@@ -11,15 +11,15 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "31.03.2019"
-#define Version     "1.1.4"
+#define LastModifed "05.04.2019"
+#define Version     "1.1.5"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   31.03.2019
-  Version       :   1.1.4
+  Last Modifed  :   05.05.2019
+  Version       :   1.1.5
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
@@ -41,8 +41,10 @@
                       Finished Cleanup of the whole Programm. Fixed some Bugs.
                     Version 1.1.3
                       Fixed MQTT bug with Channel publish crashing the esp. Fixed WiFi and MQTT connection and auto restart
-                    Cersion 1.1.4
+                    Version 1.1.4
                       Fixed direction state and publish command from the color modes for MQTT
+                    Version 1.1.5
+                      Fixed Brigthness bug, Color Picker bug, Effect Speed Bug and added more Debug options. 
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
@@ -74,7 +76,7 @@ boolean DevMode = true;
 #define COLOR_ORDER RGB                   //Color Order of the LEDs
 CRGB ledoutput[NUM_LEDS];                 //1D matrix that represents the real construction of the led strips. Gets pushed out to the Dataline
 CRGB leds[matrix_x][matrix_y];            //2D matrix that mimics the given Matrix on the ball, for easier effect programming. Gets converted into the 1D Matrix
-boolean activatedGammaCorrection = true;  //Activates or deactivates the gamma8 correction
+boolean activatedGammaCorrection = false;  //Activates or deactivates the gamma8 correction
 
 //--- Main State Machine ---//
 int MainState = 0;                  //Status of the Main State Machine
@@ -96,11 +98,15 @@ int LastIndexRandomColor = 0;
 
 //Random Color Sync
 
+//Color Control State
+int ColorControl = 0;
+
 //--- Defines for Debugs ---//
 //Will be Serial printed in the Information Tab
 #define DEBUG_MAIN_STATE    //Prints Main State
 #define DEBUG_LIGHT_STATE   //Prints Light State
-#define DEBUG_EFFECTS       //Prints 
+//#define DEBUG_COLOR         //Prints the Color Control mode
+#define DEBUG_EFFECTS       //Prints the used Effect
 //#define DEBUG_NETWORK       //Prints MQTT Parameter
 
 //LED Ball Control Parameter
@@ -126,41 +132,40 @@ uint8_t EffectNumber;     //0 - 255
 uint8_t EffectDirection;  // 8 == Up // 6 == Right // 2 == Down // 4 == Left
 
 
-
 //Timer / Delay
 unsigned long PrevMillis_Example              = 0;
-unsigned long PrevMillis_RGBCheck             = 0;
-unsigned long PrevMillis_EffectNoWiFi         = 0;
-unsigned long PrevMillis_GeneralError         = 0;
-unsigned long PrevMillis_EffectStartupReady   = 0;
-unsigned long PrevMillis_FadeBrightness       = 0;
-unsigned long PrevMillis_FadeColor            = 0;
-unsigned long PrevMillis_EffectRainDrop       = 0;
+//----Color----//
+unsigned long PrevMillis_NormalColor          = 0;
 unsigned long PrevMillis_RandomColor          = 0;
 unsigned long PrevMillis_RainbowColor         = 0;
-unsigned long PrevMillis_DiscoBall            = 0;
-unsigned long PrevMillis_Rave                 = 0;
-unsigned long PrevMillis_RingRun              = 0;
-unsigned long PrevMillis_DiscoField           = 0;
+unsigned long PrevMillis_RandomColorSync      = 0;
+//----Brightness----//
+unsigned long PrevMillis_FadeBrightness       = 0;
+//----Effects----//
+unsigned long PrevMillis_Effect               = 0;    //Timeout is Controlled by EffectSpeed
+unsigned long PrevMillis_GeneralError         = 0;
+unsigned long PrevMillis_RGBCheck             = 0;
+unsigned long PrevMillis_EffectStartupReady   = 0;
+unsigned long PrevMillis_NoWiFiConnection     = 0;
 
 
-unsigned long TimeOut_Example                 = 1000; // 1.00 Seconds
-unsigned long TimeOut_RGBCheck                = 2000; // 2.00 Seconds
-unsigned long TimeOut_EffectNoWiFi            = 60;   // 0.06 Seconds    => Effect Speed
-unsigned long TimeOut_GeneralError            = 60;   // 0.06 Seconds    => Effect Speed
-unsigned long TimeOut_EffectStartupReady      = 30;   // 0.03 Seconds    => Effect Speed
-unsigned long TimeOut_FadeBrightness          = 10;   // 0.01 Seconds    => Effect Speed
-unsigned long TimeOut_FadeColor               = 20;   // 0.02 Seconds    => Effect Speed
-unsigned long TimeOut_EffectRainDrop          = 40;   // 0.04 Seconds    => Effect Speed
-unsigned long TimeOut_RandomColor             = 4000; // 4.00 Seconds    => Effect Speed
-unsigned long TimeOut_RainbowColor            = 40;   // 0.04 Seconds    => Effect Speed
-unsigned long TimeOut_DiscoBall               = 40;   // 0.04 Seconds    => Effect Speed
-unsigned long TimeOut_Rave                    = 100;  // 0.10 Seconds    => Effect Speed
-unsigned long TimeOut_RingRun                 = 40;   // 0.04 Seconds    => Effect Speed
-unsigned long TimeOut_DiscoField              = 40;   // 0.04 Seconds    => Effect Speed
+unsigned long TimeOut_Example                 = 1000;   // 1.00 Seconds
+//----Color----//
+unsigned long TimeOut_NormalColor             = 30;     // 0.03 Seconds
+unsigned long TimeOut_RandomColor             = 4000;   // 4.00 Seconds
+unsigned long TimeOut_RainbowColor            = 30;     // 0.03 Seconds
+unsigned long TimeOut_RandomColorSync         = 30;     // 0.03 Seconds
+//----Brightness----//
+unsigned long TimeOut_FadeBrightness          = 10;     // 0.01 Seconds
+//----Effects----//
+unsigned long TimeOut_GeneralError            = 30;     // 0.03 Seconds
+unsigned long TimeOut_RGBCheck                = 3000;   // 3.00 Seconds
+unsigned long TimeOut_EffectStartupReady      = 30;     // 0.03 Seconds
+unsigned long TimeOut_NoWiFiConnection        = 30;     // 0.03 Seconds
+
 
 //Speical for Show
-unsigned long PrevMillis_FPS  = 0;
+unsigned long PrevMillis_FPS  = 0;  //Timeout is Controlled by FPS/1000
 
 /*
   unsigned long CurMillis_Example = millis();
@@ -274,6 +279,9 @@ int mem_MainState;
 
 //Memory form the Light State
 int mem_LightState;
+
+//memory from the Color Control
+int mem_ColorControl;
 
 //memory form the Effect
 int mem_EffectNumber;
@@ -509,26 +517,26 @@ void loop() {
 //--------------------------- Light State machine of the LED ball ---------------------------//
 void lightControl() {
 
-  boolean RandomColor;      //On / Off
-  boolean RainbowColor;      //On / Off
-  boolean RandomColorSync;   //On / Off
-
   //Decides wich Color Effect is used
   if (not RandomColor && not RainbowColor && not RandomColorSync) {
     //Normal Color
     ColorPickerNormal();
+    ColorControl = 0;
   }
   if (RandomColor && not RainbowColor && not RandomColorSync) {
     //Random Color
     ColorPickerRandom();
+    ColorControl = 1;
   }
   if (not RandomColor && RainbowColor && not RandomColorSync) {
     //Rainbow Color
     ColorPickerRainbow();
+    ColorControl = 2;
   }
   if (not RandomColor && not RainbowColor &&  RandomColorSync) {
     //Random Color Sync
     ColorPickerRandomSync();
+    ColorControl = 3;
   }
 
   //Decides wich Effect is used
@@ -609,7 +617,10 @@ void ColorPickerNormal() {
   Red = mqtt_Red;
   Green = mqtt_Green;
   Blue = mqtt_Blue;
+  //Fade Color
   FadeColor();
+  //Fade Brightness
+  FadeBrightness();
 }
 
 
@@ -627,8 +638,6 @@ void ColorPickerRandom() {
     }
     LastIndexRandomColor = IndexRandomColor;
   }
-
-  TimeOut_FadeColor = 20; //Set constant fadespeed
   switch (IndexRandomColor) {
 
     case 0:
@@ -681,6 +690,8 @@ void ColorPickerRandom() {
       break;
 
   }
+  //Fade Brightness
+  FadeBrightness();
 }
 
 
@@ -743,12 +754,16 @@ void ColorPickerRainbow() {
       }
       break;
   }
+  //Fade Brightness
+  FadeBrightness();
 }
 
 
 //--------------------------- Rainbow Color ---------------------------//
 void ColorPickerRandomSync() {
 
+  //Fade Brightness
+  FadeBrightness();
 }
 
 

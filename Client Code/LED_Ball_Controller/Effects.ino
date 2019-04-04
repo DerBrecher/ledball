@@ -22,22 +22,21 @@ void ShowMatrix() {
       int tempRed = ledoutput[i].r;
       int tempGreen = ledoutput[i].g;
       int tempBlue = ledoutput[i].b;
-      
+
       ledoutput[i].r = gamma8[tempRed];   //Gamma Correction Red
       ledoutput[i].g = gamma8[tempGreen]; //Gamma Correction Green
       ledoutput[i].b = gamma8[tempBlue];  //Gamma Correction Blue
     }
   }
-
   LEDS.setBrightness(actualBrightness);
   FastLED.show();
 }
 
 boolean FadeColor() {
 
-  unsigned long CurMillis_FadeColor = millis();
-  if (CurMillis_FadeColor - PrevMillis_FadeColor >= TimeOut_FadeColor) {
-    PrevMillis_FadeColor = CurMillis_FadeColor;
+  unsigned long CurMillis_NormalColor = millis();
+  if (CurMillis_NormalColor - PrevMillis_NormalColor >= TimeOut_NormalColor) {
+    PrevMillis_NormalColor = CurMillis_NormalColor;
 
     if (prevColorRed != Red || prevColorGreen != Green || prevColorBlue != Blue) {
 
@@ -106,34 +105,27 @@ void FadeBrightness() {
 
 //---------------------------Main Light Effects---------------------------//
 void fillSolid() {
-  unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= int(FPS / 1000)) {
-    PrevMillis_FPS = CurMillis_FPS;
-    for (int i = 0 ; i < matrix_x; i++) {
-      for (int u = 0; u < matrix_y; u++) {
-        leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-      }
+  for (int i = 0 ; i < matrix_x; i++) {
+    for (int u = 0; u < matrix_y; u++) {
+      leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
     }
   }
 }
 
 void Equalizer() {
-  unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= int(FPS / 1000)) {
-    PrevMillis_FPS = CurMillis_FPS;
-
-
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
 
   }
-
 }
 
 void RainDrop() {
   //ToDo: Add Direction
 
-  unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
-    PrevMillis_FPS = CurMillis_FPS;
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
 
     //Parameter
     int NumberRainDrops = int(matrix_x * 0.2);
@@ -164,11 +156,11 @@ void RainDrop() {
 }
 
 void RingRun() {
-  int DirectionRingRun = 2; //0 = right // 1 = left
+  int DirectionRingRun = 2;
 
-  unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
-    PrevMillis_FPS = CurMillis_FPS;
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
     switch (DirectionRingRun) {
 
       case 0: //Right
@@ -208,15 +200,14 @@ void RingRun() {
 }
 
 void DiscoBall() {
-  unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
-    PrevMillis_FPS = CurMillis_FPS;
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
     for (int k = 0; k < NumberPixels; k++) {
       int x = random(0, matrix_x);
       int y = random(0, matrix_y);
       leds[x][y] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
     }
-    ShowMatrix();
     fadeall(FadeSpeed);
   }
 }
@@ -254,10 +245,9 @@ void DiscoField() {
     CounterNewFieldGen = 0;
   }
 
-  unsigned long CurMillis_FPS = millis();
-  if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
-    PrevMillis_FPS = CurMillis_FPS;
-    ShowMatrix();
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
     fadeall(FadeSpeed);
     CounterNewFieldGen++;
   }
@@ -278,10 +268,9 @@ void Rave() {
     InitRave = false;
   } else {
     //Perma Shift Array right
-    unsigned long CurMillis_FPS = millis();
-    if (CurMillis_FPS - PrevMillis_FPS >= (int(FPS / 1000) + EffectSpeed)) {
-      PrevMillis_FPS = CurMillis_FPS;
-      ShowMatrix();
+    unsigned long CurMillis_Effect = millis();
+    if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+      PrevMillis_Effect = CurMillis_Effect;
       ShiftArrayToLeft();
     }
   }
@@ -322,7 +311,6 @@ void GeneralErrorEffect() {
     for (int i = 0; i < matrix_y; i++) {
       leds[PosXStatusEffectError][i] = CRGB(255, 0, 0);
     }
-    ShowMatrix();
     fadeall(40);
     if (PosXStatusEffectError >= matrix_x - 1) {
       PosXStatusEffectError = 0;
@@ -369,12 +357,10 @@ boolean StartupReadyEffect() {
     for (int i = 0; i < matrix_y; i++) {
       leds[PosXStatusEffectStartupReady][i] = CHSV(hueStartupReady++, 255, 255);
     }
-    ShowMatrix();
     if (CounterFinishedStartupSequence >= 9) {
       for (int i = 0; i < matrix_y; i++) {
         leds[PosXStatusEffectStartupReady][i] = CRGB(0, 0, 0);
       }
-      ShowMatrix();
     }
     if (PosXStatusEffectStartupReady >= matrix_x - 1) {
       PosXStatusEffectStartupReady = 0;
@@ -392,11 +378,15 @@ boolean StartupReadyEffect() {
 }
 
 void noWifiConnection() {
-  //Effect when no WiFi is Connected
-  for (int i = 0; i < matrix_x; i++) {
-    for (int u = 0; u < matrix_y; u++) {
-      if (i % 2 && u % 2) {
-        leds[i][u] = CRGB(255, 0, 0);
+  unsigned long CurMillis_NoWiFiConntection = millis();
+  if (CurMillis_NoWiFiConntection - PrevMillis_NoWiFiConnection >= TimeOut_NoWiFiConnection) {
+    PrevMillis_NoWiFiConnection = CurMillis_NoWiFiConntection;
+    //Effect when no WiFi is Connected
+    for (int i = 0; i < matrix_x; i++) {
+      for (int u = 0; u < matrix_y; u++) {
+        if (i % 2 && u % 2) {
+          leds[i][u] = CRGB(255, 0, 0);
+        }
       }
     }
   }

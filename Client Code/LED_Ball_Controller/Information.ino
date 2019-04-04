@@ -97,6 +97,28 @@ void printer() {
 #endif
 
 
+#ifdef DEBUG_COLOR
+  //Prints the state of the Color Control
+  if (mem_ColorControl != ColorControl) {
+    Serial.println("/--------------Color--------------/");
+    Serial.print("  Color            : ");
+    switch (ColorControl) {
+      case 0 : Serial.println("Color Picker Normal");
+        break;
+      case 1 : Serial.println("Color Picker Random");
+        break;
+      case 2 : Serial.println("Color Picker Rainbow");
+        break;
+      case 3 : Serial.println("Color Picker Random Sync");
+        break;
+    }
+    Serial.println("/---------------------------------/");
+  }
+  //Reset
+  mem_ColorControl = ColorControl;
+#endif
+
+
 #ifdef DEBUG_EFFECTS
   //Prints the current effect
   if (mem_EffectNumber != EffectNumber) {
