@@ -12,24 +12,23 @@
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
 #define LastModifed "05.04.2019"
-#define Version     "1.1.5"
+#define Version     "1.1.6"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   05.05.2019
-  Version       :   1.1.5
+  Last Modifed  :   05.04.2019
+  Version       :   1.1.6
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
-                    - Add Boundry Check for MQTT Parameter
                     - Disable MQTT Parameter Sync depending on the used Effect to prevent overide
                     - When gamma8 correction is used fix fade to new color with gamma8 correction
 
-  Error Help    :   1. If the ball blinks red and black its an Effect Watchdog Error. If this happens an Effect to longer than 10 sec to complete
-                    2. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
-                    3. If the ball has a red ring going around it. Then its a General Error. If this happens try to restart the ball, and check the States if it happens again.
+  Error Help    :   1. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
+                    2. If the ball has a red ring going around it. Then its a General Error. If this happens try to pick an other effect. If this doesnt change anything
+                       try to restart the ball, and check the States if it happens again.
 
   Patchnotes    :   Version 1.0
                       Initial Code
@@ -44,7 +43,9 @@
                     Version 1.1.4
                       Fixed direction state and publish command from the color modes for MQTT
                     Version 1.1.5
-                      Fixed Brigthness bug, Color Picker bug, Effect Speed Bug and added more Debug options. 
+                      Fixed Brigthness bug, Color Picker bug, Effect Speed Bug and added more Debug options.
+                    Version 1.1.6
+                      Fixed Status Effect were not displayed.
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
@@ -76,7 +77,7 @@ boolean DevMode = true;
 #define COLOR_ORDER RGB                   //Color Order of the LEDs
 CRGB ledoutput[NUM_LEDS];                 //1D matrix that represents the real construction of the led strips. Gets pushed out to the Dataline
 CRGB leds[matrix_x][matrix_y];            //2D matrix that mimics the given Matrix on the ball, for easier effect programming. Gets converted into the 1D Matrix
-boolean activatedGammaCorrection = false;  //Activates or deactivates the gamma8 correction
+boolean activatedGammaCorrection = true;  //Activates or deactivates the gamma8 correction
 
 //--- Main State Machine ---//
 int MainState = 0;                  //Status of the Main State Machine
@@ -115,8 +116,8 @@ boolean Power;            //On / Off
 
 //Controls the Color shown on the Ball
 boolean RandomColor;      //On / Off
-boolean RainbowColor;      //On / Off
-boolean RandomColorSync;   //On / Off
+boolean RainbowColor;     //On / Off
+boolean RandomColorSync;  //On / Off
 uint8_t Red;              //0 - 255
 uint8_t Green;            //0 - 255
 uint8_t Blue;             //0 - 255
@@ -158,10 +159,10 @@ unsigned long TimeOut_RandomColorSync         = 30;     // 0.03 Seconds
 //----Brightness----//
 unsigned long TimeOut_FadeBrightness          = 10;     // 0.01 Seconds
 //----Effects----//
-unsigned long TimeOut_GeneralError            = 30;     // 0.03 Seconds
+unsigned long TimeOut_GeneralError            = 50;     // 0.03 Seconds
 unsigned long TimeOut_RGBCheck                = 3000;   // 3.00 Seconds
 unsigned long TimeOut_EffectStartupReady      = 30;     // 0.03 Seconds
-unsigned long TimeOut_NoWiFiConnection        = 30;     // 0.03 Seconds
+unsigned long TimeOut_NoWiFiConnection        = 50;     // 0.03 Seconds
 
 
 //Speical for Show
@@ -432,9 +433,6 @@ void loop() {
     ShowMatrix();
   }
 
-  //Syncs Main Parameter with the Paramter from MQTT
-  syncParameter();
-
   //Monitoring Wifi Connection. If it doesnt reconnect in 300ms * 10 then restart ESP
   //Reconnect to WiFi if it loses connection. After that try to connect to MQTT
   if (!mqtt_Client.connected()) {
@@ -499,6 +497,9 @@ void loop() {
       break;
 
     case 100: //Goes into the State Machine for the Light Effects
+      //Syncs Main Parameter with the Paramter from MQTT
+      syncParameter();
+      //Light Control
       lightControl();
       break;
 
@@ -795,7 +796,7 @@ void InitMqttParameter() {
   mqtt_Red              = 0;
   mqtt_Green            = 128;
   mqtt_Blue             = 255;
-  mqtt_Brightness       = 150;
+  mqtt_Brightness       = 200;
   mqtt_RandomEffect     = false;
   mqtt_EffectSpeed      = 10;
   mqtt_FadeSpeed        = 10;

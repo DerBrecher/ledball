@@ -305,13 +305,17 @@ void ShiftArrayToRight() {
 
 //---------------------------Information Effects---------------------------//
 void GeneralErrorEffect() {
+  //Set Brightness to Max
+  actualBrightness = 255;
+
   unsigned long CurMillis_GeneralError = millis();
   if (CurMillis_GeneralError - PrevMillis_GeneralError >= TimeOut_GeneralError) {
     PrevMillis_GeneralError = CurMillis_GeneralError;
+    //Effect when a general error occurs
+    black();
     for (int i = 0; i < matrix_y; i++) {
       leds[PosXStatusEffectError][i] = CRGB(255, 0, 0);
     }
-    fadeall(40);
     if (PosXStatusEffectError >= matrix_x - 1) {
       PosXStatusEffectError = 0;
     } else {
@@ -321,6 +325,9 @@ void GeneralErrorEffect() {
 }
 
 boolean RGBCheckEffect() {
+  //Set Brightness to Max
+  actualBrightness = 255;
+
   unsigned long CurMillis_RGBCheck = millis();
   if (CurMillis_RGBCheck - PrevMillis_RGBCheck >= TimeOut_RGBCheck) {
     PrevMillis_RGBCheck = CurMillis_RGBCheck;
@@ -351,6 +358,9 @@ boolean RGBCheckEffect() {
 }
 
 boolean StartupReadyEffect() {
+  //Set Brightness to Max
+  actualBrightness = 255;
+
   unsigned long CurMillis_EffectStartupReady = millis();
   if (CurMillis_EffectStartupReady - PrevMillis_EffectStartupReady >= TimeOut_EffectStartupReady) {
     PrevMillis_EffectStartupReady = CurMillis_EffectStartupReady;
@@ -378,16 +388,21 @@ boolean StartupReadyEffect() {
 }
 
 void noWifiConnection() {
+  //Set Brightness to Max
+  actualBrightness = 255;
+
   unsigned long CurMillis_NoWiFiConntection = millis();
   if (CurMillis_NoWiFiConntection - PrevMillis_NoWiFiConnection >= TimeOut_NoWiFiConnection) {
     PrevMillis_NoWiFiConnection = CurMillis_NoWiFiConntection;
     //Effect when no WiFi is Connected
-    for (int i = 0; i < matrix_x; i++) {
-      for (int u = 0; u < matrix_y; u++) {
-        if (i % 2 && u % 2) {
-          leds[i][u] = CRGB(255, 0, 0);
-        }
-      }
+    black();
+    for (int i = 0; i < matrix_y; i++) {
+      leds[PosXStatusEffectError][i] = CRGB(0, 255, 0);
+    }
+    if (PosXStatusEffectError >= matrix_x - 1) {
+      PosXStatusEffectError = 0;
+    } else {
+      PosXStatusEffectError++;
     }
   }
 }
