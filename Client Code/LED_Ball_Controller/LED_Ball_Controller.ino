@@ -11,19 +11,19 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "05.04.2019"
-#define Version     "1.1.6"
+#define LastModifed "07.04.2019"
+#define Version     "1.1.7"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   05.04.2019
-  Version       :   1.1.6
+  Last Modifed  :   07.04.2019
+  Version       :   1.1.7
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
-                    - Disable MQTT Parameter Sync depending on the used Effect to prevent overide
+                    - When the direction is used, the speed of the effects must be adjusted according to the direction. Effect speeds are time based and not pixel lenght based
                     - When gamma8 correction is used fix fade to new color with gamma8 correction
 
   Error Help    :   1. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
@@ -46,6 +46,8 @@
                       Fixed Brigthness bug, Color Picker bug, Effect Speed Bug and added more Debug options.
                     Version 1.1.6
                       Fixed Status Effect were not displayed.
+                    Version 1.1.7
+                      Added RandomColorSync and added Direction Option to some Effects. Random Color Sync only Supports some of the Effects. If the Effect not supports it, the controller will automatically use the normal color picker
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
@@ -98,6 +100,11 @@ int IndexRandomColor = 0;
 int LastIndexRandomColor = 0;
 
 //Random Color Sync
+int IndexRandomColorSync = 0;
+int LastIndexRandomColorSync = 0;
+boolean memEffectFinsihed = false;
+boolean NextColor = false;
+boolean SendNotSupported = false;
 
 //Color Control State
 int ColorControl = 0;
@@ -296,7 +303,7 @@ PubSubClient  mqtt_Client(wifiMqtt);
 #define mqtt_username     "pi"
 #define mqtt_password     "raspberry"
 #define mqtt_port         1883
-#define mqtt_client_name  "MumLedBallControllerTest2"
+#define mqtt_client_name  "ControllerLedBall1"
 
 //------------------------------------- Mqtt Paths --------------------------------------//
 //Parameter [mqtt_Power]
@@ -536,14 +543,16 @@ void lightControl() {
   }
   if (not RandomColor && not RainbowColor &&  RandomColorSync) {
     //Random Color Sync
-    ColorPickerRandomSync();
+    ColorPickerRandomSync(NextColor);
+    //Reset NextColor
+    NextColor = false;
     ColorControl = 3;
   }
 
   //Decides wich Effect is used
   if (Power) {
     if (RandomEffect) {
-      LightState = 0;
+      LightState = 10;
     } else {
       LightState = 20;
     }
@@ -599,14 +608,19 @@ void lightControl() {
           break;
 
       }
+      //Reset Rave Init if another Effect is called
+      if (EffectNumber != 6) {
+        InitRave = true;
+      }
+
       break;
 
     case 30: //No Power State
-      fadeall(40);
+      fadeall(220);
       break;
 
     default: //Default fade all
-      fadeall(40);
+      fadeall(220);
       break;
   }
 
@@ -761,12 +775,84 @@ void ColorPickerRainbow() {
 
 
 //--------------------------- Rainbow Color ---------------------------//
-void ColorPickerRandomSync() {
+void ColorPickerRandomSync(boolean EffectFinsihed) {
+  //!Warning! this Color Picker is not Supported by all Effects//
+
+  //Check for a rising edge at the var EffectFinished
+  if (not memEffectFinsihed and EffectFinsihed) {
+    //Create New Color
+
+    while (true) {
+      IndexRandomColorSync = int(random(0, 5));
+      if (IndexRandomColorSync != LastIndexRandomColorSync) {
+        break;
+      }
+    }
+    LastIndexRandomColorSync = IndexRandomColorSync;
+
+    switch (IndexRandomColorSync) {
+
+      case 0:
+        actualColorRed   = 255;
+        actualColorGreen = 0;
+        actualColorBlue  = 0;
+        break;
+
+      case 1:
+        actualColorRed   = 255;
+        actualColorGreen = 255;
+        actualColorBlue  = 0;
+        break;
+
+      case 2:
+        actualColorRed   = 0;
+        actualColorGreen = 255;
+        actualColorBlue  = 0;
+        break;
+
+      case 3:
+        actualColorRed   = 0;
+        actualColorGreen = 255;
+        actualColorBlue  = 255;
+        break;
+
+      case 4:
+        actualColorRed   = 0;
+        actualColorGreen = 0;
+        actualColorBlue  = 255;
+        break;
+
+      case 5:
+        actualColorRed   = 255;
+        actualColorGreen = 0;
+        actualColorBlue  = 255;
+        break;
+
+      default:
+        actualColorRed   = 0;
+        actualColorGreen = 0;
+        actualColorBlue  = 0;
+        break;
+
+    }
+  }
 
   //Fade Brightness
   FadeBrightness();
+
+  memEffectFinsihed = EffectFinsihed;
 }
 
+//--------------------------- Reset Color Picker to Normal ---------------------------//
+void ColorPickerRandomSyncNotSupported() {
+  if (SendNotSupported) {
+    //Reset MQTT Switch
+    mqtt_Client.publish(mqtt_command_RandomColorSync, "0"); //Turn of Random Color Sync
+    SendNotSupported = false;
+  }
+  //Reset Light Control switch
+  RandomColorSync = false;
+}
 
 //--------------------------- Sync Parameter ---------------------------//
 void syncParameter() {

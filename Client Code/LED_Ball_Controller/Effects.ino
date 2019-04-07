@@ -38,7 +38,13 @@ boolean FadeColor() {
   if (CurMillis_NormalColor - PrevMillis_NormalColor >= TimeOut_NormalColor) {
     PrevMillis_NormalColor = CurMillis_NormalColor;
 
+    //Check boundaries of the Color Values
+    Red   = Check8BitBoundaries(Red);
+    Green = Check8BitBoundaries(Green);
+    Blue  = Check8BitBoundaries(Blue);
+
     if (prevColorRed != Red || prevColorGreen != Green || prevColorBlue != Blue) {
+
 
       int distanceRed   = Red - actualColorRed;
       int distanceGreen = Green - actualColorGreen;
@@ -110,6 +116,8 @@ void fillSolid() {
       leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
     }
   }
+  //For Random Color Sync
+  ColorPickerRandomSyncNotSupported();
 }
 
 void Equalizer() {
@@ -152,6 +160,8 @@ void RainDrop() {
       int RandomPixel = (int)random(0, matrix_x);
       leds[RandomPixel][0] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
     }
+    //For Random Color Sync
+    NextColor = true;
   }
 }
 
@@ -161,27 +171,27 @@ void RingRun() {
   unsigned long CurMillis_Effect = millis();
   if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
     PrevMillis_Effect = CurMillis_Effect;
-    switch (DirectionRingRun) {
+    switch (EffectDirection) {
 
-      case 0: //Right
+      case 6: //Right
         for (int u = 0; u < matrix_y; u++) {
           leds[PosXEffectRingRun][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
         break;
 
-      case 1: //left
+      case 4: //left
         for (int u = 0; u < matrix_y; u++) {
           leds[(matrix_x - 1) - PosXEffectRingRun][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
         break;
 
-      case 2:
+      case 8: //up
         for (int i = 0; i < matrix_x; i++) {
           leds[i][PosYEffectRingRun] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
         break;
 
-      case 3:
+      case 2: //down
         for (int i = 0; i < matrix_x; i++) {
           leds[i][(matrix_y - 1) - PosYEffectRingRun] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
@@ -191,10 +201,18 @@ void RingRun() {
     PosXEffectRingRun++;
     if (PosXEffectRingRun > matrix_x - 1) {
       PosXEffectRingRun = 0;
+      if (EffectDirection == 6 || EffectDirection == 4) {
+        //For Random Color Sync
+        NextColor = true;
+      }
     }
     PosYEffectRingRun++;
     if (PosYEffectRingRun > matrix_y - 1) {
       PosYEffectRingRun = 0;
+      if (EffectDirection == 8 || EffectDirection == 2) {
+        //For Random Color Sync
+        NextColor = true;
+      }
     }
   }
 }
@@ -305,8 +323,8 @@ void ShiftArrayToRight() {
 
 //---------------------------Information Effects---------------------------//
 void GeneralErrorEffect() {
-  //Set Brightness to Max
-  actualBrightness = 255;
+  //Set Brightness to 200
+  actualBrightness = 200;
 
   unsigned long CurMillis_GeneralError = millis();
   if (CurMillis_GeneralError - PrevMillis_GeneralError >= TimeOut_GeneralError) {
@@ -325,8 +343,8 @@ void GeneralErrorEffect() {
 }
 
 boolean RGBCheckEffect() {
-  //Set Brightness to Max
-  actualBrightness = 255;
+  //Set Brightness to 200
+  actualBrightness = 200;
 
   unsigned long CurMillis_RGBCheck = millis();
   if (CurMillis_RGBCheck - PrevMillis_RGBCheck >= TimeOut_RGBCheck) {
@@ -358,8 +376,8 @@ boolean RGBCheckEffect() {
 }
 
 boolean StartupReadyEffect() {
-  //Set Brightness to Max
-  actualBrightness = 255;
+  //Set Brightness to 200
+  actualBrightness = 200;
 
   unsigned long CurMillis_EffectStartupReady = millis();
   if (CurMillis_EffectStartupReady - PrevMillis_EffectStartupReady >= TimeOut_EffectStartupReady) {
@@ -388,8 +406,8 @@ boolean StartupReadyEffect() {
 }
 
 void noWifiConnection() {
-  //Set Brightness to Max
-  actualBrightness = 255;
+  //Set Brightness to 200
+  actualBrightness = 200;
 
   unsigned long CurMillis_NoWiFiConntection = millis();
   if (CurMillis_NoWiFiConntection - PrevMillis_NoWiFiConnection >= TimeOut_NoWiFiConnection) {

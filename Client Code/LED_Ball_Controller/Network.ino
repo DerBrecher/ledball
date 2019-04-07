@@ -4,7 +4,7 @@
 
 //------------------------------------- WiFi Control -------------------------------------//
 void wifi() {
- 
+
   delay(1);
   //Start Wifi Connection
   if (StartWifiConnection) {
@@ -138,6 +138,9 @@ void callback(char* topic, byte * payload, unsigned int length) {
     mqtt_Client.publish(mqtt_command_RandomColor, "0");  //Turn of Random Color
     mqtt_Client.publish(mqtt_command_RainbowColor, "0"); //Turn of Rainbow Color
     mqtt_Client.publish(mqtt_command_RandomColorSync, message); //State of Random Color Sync
+
+    //Reset Not Supported
+    SendNotSupported = true;
   }
 
   //------------------- Parameter [mqtt_Red, mqtt_Green, mqtt_Blue] -------------------//
@@ -149,6 +152,14 @@ void callback(char* topic, byte * payload, unsigned int length) {
     mqtt_Red    = Check8BitBoundaries(atoi(red));
     mqtt_Green  = Check8BitBoundaries(atoi(green));
     mqtt_Blue   = Check8BitBoundaries(atoi(blue));
+
+    mqtt_RandomColor     = false;
+    mqtt_RainbowColor    = false;
+    mqtt_RandomColorSync = false;
+
+    mqtt_Client.publish(mqtt_command_RandomColor, "0");     //Turn of Random Color
+    mqtt_Client.publish(mqtt_command_RainbowColor, "0");    //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_command_RandomColorSync, "0"); //Turn of Random Color Sync
 
     mqtt_Client.publish(mqtt_command_Color, message);
   }
