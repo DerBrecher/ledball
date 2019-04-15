@@ -218,6 +218,19 @@ void callback(char* topic, byte * payload, unsigned int length) {
   }
 }
 
+//------------------------------------- MQTT Heartbeat -------------------------------------//
+void HeartBeat() {
+  unsigned long CurMillis_HeartBeat = millis();
+  if (CurMillis_HeartBeat - PrevMillis_HeartBeat >= TimeOut_HeartBeat) {
+    PrevMillis_HeartBeat = CurMillis_HeartBeat;
+    HeartBeatCounter++;
+    String FinalMessage = LedBallName + "," + String(HeartBeatCounter);
+    char message[30];
+    FinalMessage.toCharArray(message,sizeof(message));
+    mqtt_Client.publish(mqtt_heartbeat, message);
+  }
+}
+
 //------------------------------------- Boundarie Check --------------------------------------//
 int Check8BitBoundaries(int x) {
   if (x < 0) {

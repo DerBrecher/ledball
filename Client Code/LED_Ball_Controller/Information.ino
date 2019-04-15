@@ -141,14 +141,25 @@ void printer() {
         break;
       case 7 : Serial.println("Equalizer");
         break;
-      case 8 : Serial.println("");
+      case 8 : Serial.println("Single Bounce");
         break;
-      case 9: Serial.println("");
+      case 9: Serial.println("Double Bounce");
         break;
-      case 10: Serial.println("");
+      case 10: Serial.println("Full Flash");
         break;
-      case 11: Serial.println("");
+      case 11: Serial.println("Half Flash");
         break;
+      case 12: Serial.println("QuarterFlash");
+        break;
+      case 13: Serial.println("EighthFlash");
+        break;
+      case 14: Serial.println("");
+        break;
+      case 15: Serial.println("");
+        break;
+      case 16: Serial.println("");
+        break;
+
 
       default: Serial.println("General Error Effect");
         break;

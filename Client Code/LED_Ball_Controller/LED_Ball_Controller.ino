@@ -11,15 +11,15 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "07.04.2019"
-#define Version     "1.1.7"
+#define LastModifed "15.04.2019"
+#define Version     "1.1.8"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   07.04.2019
-  Version       :   1.1.7
+  Last Modifed  :   15.04.2019
+  Version       :   1.1.8
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
@@ -48,6 +48,8 @@
                       Fixed Status Effect were not displayed.
                     Version 1.1.7
                       Added RandomColorSync and added Direction Option to some Effects. Random Color Sync only Supports some of the Effects. If the Effect not supports it, the controller will automatically use the normal color picker
+                    Version 1.1.8
+                      Added Heartbeat every 5sec. Added Bounce, Flash Effects.
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
@@ -80,6 +82,7 @@ boolean DevMode = true;
 CRGB ledoutput[NUM_LEDS];                 //1D matrix that represents the real construction of the led strips. Gets pushed out to the Dataline
 CRGB leds[matrix_x][matrix_y];            //2D matrix that mimics the given Matrix on the ball, for easier effect programming. Gets converted into the 1D Matrix
 boolean activatedGammaCorrection = true;  //Activates or deactivates the gamma8 correction
+String LedBallName = "LED_Ball_1";
 
 //--- Main State Machine ---//
 int MainState = 0;                  //Status of the Main State Machine
@@ -90,12 +93,16 @@ unsigned long PrevMillis_PublishMatrix = 0;
 //--- Light State Machine ---//
 int LightState = 0;                 //Status of the Light State Machine
 
+//--- HeartBeat ---//
+unsigned long HeartBeatCounter = 0;
+
 //Normal Color
 
 //Rainbow Color
 int IndexRainbow = 0;
 
 //Random Color
+boolean NextIndex = false;
 int IndexRandomColor = 0;
 int LastIndexRandomColor = 0;
 
@@ -155,6 +162,8 @@ unsigned long PrevMillis_GeneralError         = 0;
 unsigned long PrevMillis_RGBCheck             = 0;
 unsigned long PrevMillis_EffectStartupReady   = 0;
 unsigned long PrevMillis_NoWiFiConnection     = 0;
+//----HeartBeat----//
+unsigned long PrevMillis_HeartBeat            = 0;
 
 
 unsigned long TimeOut_Example                 = 1000;   // 1.00 Seconds
@@ -170,6 +179,8 @@ unsigned long TimeOut_GeneralError            = 50;     // 0.03 Seconds
 unsigned long TimeOut_RGBCheck                = 3000;   // 3.00 Seconds
 unsigned long TimeOut_EffectStartupReady      = 30;     // 0.03 Seconds
 unsigned long TimeOut_NoWiFiConnection        = 50;     // 0.03 Seconds
+//----HeartBeat----//
+unsigned long TimeOut_HeartBeat               = 5000;   // 5.00 Seconds
 
 
 //Speical for Show
@@ -220,14 +231,8 @@ int hueStartupReady = 0;
 //-----RainDrop
 boolean DummyLEDMatrix[matrix_x][matrix_y];
 
-//-----RandomColor
-boolean NextIndex = false;
-
 //-----DiscoBall
 int NumberPixels = 15;
-
-//-----DiscoField
-
 
 //-----Rave
 boolean InitRave = true;
@@ -239,6 +244,33 @@ int PosYEffectRingRun = 0;
 //-----DiscoField
 int CounterNewFieldGen = 0;
 
+//-----Equalizer
+int RandomPosYEqualizer[matrix_x];
+
+//-----SingleBounce
+boolean SwapSingleBounce        = false;
+int PosYEffectSingleBounce  = 0;
+int PosXEffectSingleBounce  = 0;
+
+//-----DoubleBounce
+boolean SwapDoubleBounce        = false;
+int PosYEffectDoubleBounce  = 0;
+int PosXEffectDoubleBounce  = 0;
+
+//-----FullFlash
+
+//----HalfFlash
+boolean SwapHalfFlash = false;
+boolean nextHalfFlash;
+
+//----QuarterFlash
+int FlashSection = 0;
+boolean nextQuarterFlash;
+
+//----EighthFlash
+int XFlashSection = 0;
+int YFlashSection = 0;
+boolean nextEighthFlash;
 
 //gamma8 Array that replaces the calculate RGB Values in the function ShowMatrix if activated
 const uint8_t gamma8[] = {
@@ -350,6 +382,9 @@ const char* mqtt_command_EffectNumber   = "ledball/command/EffectNumber";
 const char* mqtt_state_EffectDirection     = "ledball/state/EffectDirection";
 const char* mqtt_command_EffectDirection   = "ledball/command/EffectDirection";
 
+//Heartbeat
+const char* mqtt_heartbeat  = "ledball/heartbeat";
+
 //---- LED Ball Control Parameter from MQTT ----//
 /*
    Mirror image of the real parameters. Are only used to
@@ -431,6 +466,8 @@ void setup() {
 void loop() {
 
   mqtt_Client.loop();
+  //--HeartBeat--//
+  HeartBeat();
 
   /*--------------------- Cyclic monitoring and processing ---------------------*/
   //Publishes the LED Matrix at an Set FPS Rate
@@ -601,6 +638,30 @@ void lightControl() {
 
         case 7: //Effect Equalizer
           Equalizer();
+          break;
+
+        case 8: //SingleBounce
+          SingleBounce();
+          break;
+
+        case 9: //DoubleBounce
+          DoubleBounce();
+          break;
+
+        case 10: //FullFlash
+          FullFlash();
+          break;
+
+        case 11: //HalfFlash
+          HalfFlash();
+          break;
+
+        case 12: //QuarterFlash
+          QuarterFlash();
+          break;
+
+        case 13: //EighthFlash
+          EighthFlash();
           break;
 
         default: //Effect Status Effect Error
