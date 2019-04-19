@@ -104,6 +104,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
     mqtt_Client.publish(mqtt_command_RandomColor, message);         //State of Random Color
     mqtt_Client.publish(mqtt_command_RainbowColor, "0");     //Turn of Rainbow Color
     mqtt_Client.publish(mqtt_command_RandomColorSync, "0");  //Turn of Random Color Sync
+
+    //For Random Color Sync
+    SendNotSupported = true;
+    SendOnlySupported = true;
   }
 
   //------------------- Parameter [mqtt_RainbowColor] -------------------//
@@ -121,6 +125,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
     mqtt_Client.publish(mqtt_command_RandomColor, "0");      //Turn of Random Color
     mqtt_Client.publish(mqtt_command_RainbowColor, message);        //State of Rainbow Color
     mqtt_Client.publish(mqtt_command_RandomColorSync, "0");  //Turn of Random Color Sync
+
+    //For Random Color Sync
+    SendNotSupported = true;
+    SendOnlySupported = true;
   }
 
   //------------------- Parameter [mqtt_RandomColorSync] -------------------//
@@ -139,8 +147,9 @@ void callback(char* topic, byte * payload, unsigned int length) {
     mqtt_Client.publish(mqtt_command_RainbowColor, "0"); //Turn of Rainbow Color
     mqtt_Client.publish(mqtt_command_RandomColorSync, message); //State of Random Color Sync
 
-    //Reset Not Supported
+    //For Random Color Sync
     SendNotSupported = true;
+    SendOnlySupported = true;
   }
 
   //------------------- Parameter [mqtt_Red, mqtt_Green, mqtt_Blue] -------------------//
@@ -162,6 +171,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
     mqtt_Client.publish(mqtt_command_RandomColorSync, "0"); //Turn of Random Color Sync
 
     mqtt_Client.publish(mqtt_command_Color, message);
+
+    //For Random Color Sync
+    SendNotSupported = true;
+    SendOnlySupported = true;
   }
 
   //------------------- Parameter [mqtt_Brightness] -------------------//
@@ -195,7 +208,14 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Parameter [mqtt_EffectNumber] -------------------//
   if (String(mqtt_state_EffectNumber).equals(topic)) {
-    mqtt_EffectNumber = Check8BitBoundaries(atoi(message));
+
+    //Check if Message is a Number or a Text
+    if (!isdigit(message[0])) {
+      mqtt_EffectNumber = MessageToEffectNumber(message);
+    } else {
+      mqtt_EffectNumber = Check8BitBoundaries(atoi(message));
+    }
+
     mqtt_Client.publish(mqtt_command_EffectNumber, message);
   }
 
@@ -215,7 +235,65 @@ void callback(char* topic, byte * payload, unsigned int length) {
     }
     mqtt_EffectDirection = CheckDirectionBoundaries(TempDirection);
     mqtt_Client.publish(mqtt_command_EffectDirection, message);
+
+    //Needed for Rave
+    InitRave = true;
   }
+}
+
+//------------------------------- MQTT MessageToEffectNumber --------------------------------//
+uint8_t MessageToEffectNumber(char* message) {
+  //Converts Name of the Effect to the EffectNumber
+  if (strcmp(message, "black") == 0) {
+    return 0;
+  } else if (strcmp(message, "fillSolid") == 0) {
+    return 1;
+  } else if (strcmp(message, "RainDrop") == 0) {
+    return 2;
+  } else if (strcmp(message, "RingRun") == 0) {
+    return 3;
+  } else if (strcmp(message, "DiscoBall") == 0) {
+    return 4;
+  } else if (strcmp(message, "DiscoField") == 0) {
+    return 5;
+  } else if (strcmp(message, "Rave") == 0) {
+    return 6;
+  } else if (strcmp(message, "Equalizer") == 0) {
+    return 7;
+  } else if (strcmp(message, "SingleBounce") == 0) {
+    return 8;
+  } else if (strcmp(message, "DoubleBounce") == 0) {
+    return 9;
+  } else if (strcmp(message, "FullFlash") == 0) {
+    return 10;
+  } else if (strcmp(message, "HalfFlash") == 0) {
+    return 11;
+  } else if (strcmp(message, "QuarterFlash") == 0) {
+    return 12;
+  } else if (strcmp(message, "EighthFlash") == 0) {
+    return 13;
+  } else if (strcmp(message, "Circus") == 0) {
+    return 14;
+  } else if (strcmp(message, "Matrix") == 0) {
+    return 15;
+  } else if (strcmp(message, "LoopSnake") == 0) {
+    return 16;
+  } else if (strcmp(message, "HappyBirthday") == 0) {
+    return 17;
+  } else if (strcmp(message, "HappyNewYear") == 0) {
+    return 18;
+  } else if (strcmp(message, "SpiralSnake") == 0) {
+    return 19;
+  } else if (strcmp(message, "WaveRefresh") == 0) {
+    return 20;
+  } else if (strcmp(message, "Rotor") == 0) {
+    return 21;
+  } else if (strcmp(message, "Flash") == 0) {
+    return 22;
+  } else {
+    return 0;
+  }
+
 }
 
 //------------------------------------- MQTT Heartbeat -------------------------------------//
@@ -226,7 +304,7 @@ void HeartBeat() {
     HeartBeatCounter++;
     String FinalMessage = LedBallName + "," + String(HeartBeatCounter);
     char message[30];
-    FinalMessage.toCharArray(message,sizeof(message));
+    FinalMessage.toCharArray(message, sizeof(message));
     mqtt_Client.publish(mqtt_heartbeat, message);
   }
 }

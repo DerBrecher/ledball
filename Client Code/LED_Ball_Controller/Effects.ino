@@ -107,6 +107,10 @@ void FadeBrightness() {
   }
 }
 
+void RandomEffectPicker() {
+
+}
+
 //---------------------------End Light Control---------------------------//
 
 //---------------------------Main Light Effects---------------------------//
@@ -118,6 +122,334 @@ void fillSolid() {
   }
   //For Random Color Sync
   ColorPickerRandomSyncNotSupported();
+}
+
+void Flash() {
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed * 2) {
+    PrevMillis_Effect = CurMillis_Effect;
+    if (SwapFlash) {
+      SwapFlash = false;
+      for (int i = 0; i < matrix_x; i++) {
+        for (int u = 0; u < matrix_y; u++) {
+          leds[i][u] = CRGB(255, 255, 255);
+        }
+      }
+    } else {
+      SwapFlash = true;
+      for (int i = 0; i < matrix_x; i++) {
+        for (int u = 0; u < matrix_y; u++) {
+          leds[i][u] = CRGB(0, 0, 0);
+        }
+      }
+    }
+  }
+}
+
+void Rotor() {
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
+    black();
+    for (int i = 0; i < 2; i++) {
+      for (int u = 0; u < matrix_y; u++) {
+        leds[i * int(matrix_x / 2) + XPositionRotor][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+      }
+    }
+    int maxPosX = matrix_x / 2;
+    if (XPositionRotor >= maxPosX) {
+      XPositionRotor = 0;
+      NextColor = true;
+    } else {
+      XPositionRotor++;
+    }
+  }
+}
+
+void WaveRefresh() {
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
+
+    //Effect Only works with Random Color Sync
+    ColorPickerRandomSyncOnlySupported();
+
+    switch (EffectDirection) {
+
+      case 8: //Up
+        for (int i = 0; i < matrix_x; i++) {
+          leds[i][YPosWaveRefresh] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        }
+        if (YPosWaveRefresh <= 0) {
+          YPosWaveRefresh = matrix_y - 1;
+          NextColor = true;
+        } else {
+          YPosWaveRefresh--;
+        }
+        break;
+
+      case 6: //Right
+        for (int u = 0; u < matrix_y; u++) {
+          leds[XPosWaveRefresh][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        }
+        if (XPosWaveRefresh >= matrix_x - 1) {
+          XPosWaveRefresh = 0;
+          NextColor = true;
+        } else {
+          XPosWaveRefresh++;
+        }
+        break;
+
+      case 2: //Down
+        for (int i = 0; i < matrix_x; i++) {
+          leds[i][YPosWaveRefresh] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        }
+        if (YPosWaveRefresh >= matrix_y - 1) {
+          YPosWaveRefresh = 0;
+          NextColor = true;
+        } else {
+          YPosWaveRefresh++;
+        }
+        break;
+
+      case 4: //left
+        for (int u = 0; u < matrix_y; u++) {
+          leds[XPosWaveRefresh][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        }
+        if (XPosWaveRefresh <= 0) {
+          XPosWaveRefresh = matrix_x - 1;
+          NextColor = true;
+        } else {
+          XPosWaveRefresh--;
+        }
+        break;
+
+    }
+  }
+}
+
+void SpiralSnake() {
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
+
+    leds[XLoopSnakeDirection][YLoopSnakeDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+    if (XLoopSnakeDirection < matrix_x - 1) {
+      XLoopSnakeDirection++;
+    } else {
+      XLoopSnakeDirection = 0;
+      if (YLoopSnakeDirection < matrix_y - 1) {
+        YLoopSnakeDirection++;
+      } else {
+        YLoopSnakeDirection = 0;
+        SwapLoopSnake = false;
+        NextColor = true;
+      }
+    }
+
+  }
+}
+
+void HappyNewYear() {
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
+
+  }
+}
+
+void HappyBirthday() {
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed * 2) {
+    PrevMillis_Effect = CurMillis_Effect;
+
+    int LineColorRed = abs(actualColorRed - 255);
+    int LineColorGreen = abs(actualColorGreen - 255);
+    int LineColorBlue = abs(actualColorBlue - 255);
+
+    for (int u = 0; u < matrix_y; u++) {
+      leds[matrix_x - 1][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
+      leds[matrix_x - 2][u] = CRGB(0, 0, 0);
+    }
+
+    ShiftArrayLeft();
+
+    for (int u = 0; u < 11; u++) {
+      if (Happy_Birthday_Array[u][HappyBirthdayPosX] == 1) {
+        leds[matrix_x - 3][6 + u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+      } else {
+        leds[matrix_x - 3][6 + u] = CRGB(0, 0, 0);
+      }
+    }
+    if (HappyBirthdayPosX >= (sizeof(Happy_Birthday_Array[0]) / sizeof(Happy_Birthday_Array[0][0]))) {
+      HappyBirthdayPosX = 0;
+    } else {
+      HappyBirthdayPosX++;
+    }
+    ColorPickerRandomSyncNotSupported();
+  }
+}
+
+void LoopSnake() {
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
+    fadeall(FadeSpeed);
+    if (SwapLoopSnake) {
+      leds[XLoopSnakeDirection][YLoopSnakeDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+      if (XLoopSnakeDirection < matrix_x - 1) {
+        XLoopSnakeDirection++;
+      } else {
+        XLoopSnakeDirection = 0;
+        if (YLoopSnakeDirection < matrix_y - 1) {
+          YLoopSnakeDirection++;
+        } else {
+          YLoopSnakeDirection = 0;
+          SwapLoopSnake = false;
+          NextColor = true;
+        }
+      }
+    } else {
+      leds[matrix_x - 1 - XLoopSnakeDirection][matrix_y - 1 - YLoopSnakeDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+      if (XLoopSnakeDirection < matrix_x - 1) {
+        XLoopSnakeDirection++;
+      } else {
+        XLoopSnakeDirection = 0;
+        if (YLoopSnakeDirection < matrix_y - 1) {
+          YLoopSnakeDirection++;
+        } else {
+          YLoopSnakeDirection = 0;
+          SwapLoopSnake = true;
+          NextColor = true;
+        }
+      }
+    }
+  }
+}
+
+void Matrix() {
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
+    PrevMillis_Effect = CurMillis_Effect;
+    fadeall(FadeSpeed);
+    if (SwapMatrix) {
+      for (int i = 0; i < matrix_x ; i++) {
+        if (i % 2) {
+          leds[i][YMatrixDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        } else {
+          leds[i][matrix_y - YMatrixDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        }
+      }
+    } else {
+      for (int i = 0; i < matrix_x ; i++) {
+        if (i % 2) {
+          leds[i][matrix_y - YMatrixDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        } else {
+          leds[i][YMatrixDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        }
+      }
+    }
+    if (YMatrixDirection < matrix_y) {
+      YMatrixDirection++;
+    } else {
+      YMatrixDirection = 0;
+      NextColor = true;
+      if (SwapMatrix) {
+        SwapMatrix = false;
+      } else {
+        SwapMatrix = true;
+      }
+    }
+  }
+}
+
+void Circus() {
+  unsigned long CurMillis_Effect = millis();
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed * 5) {
+    PrevMillis_Effect = CurMillis_Effect;
+
+    if (NextLine) {
+      NextLine = false;
+    } else {
+      NextLine = true;
+      NextColor = true;
+    }
+
+    int LineColorRed   = abs(actualColorRed - 255);
+    int LineColorGreen = abs(actualColorGreen - 255);
+    int LineColorBlue  = abs(actualColorBlue - 255);
+
+    int x, y;
+
+    switch (EffectDirection) {
+      case 8: //Up
+      case 2: //Down
+        black();
+        y = matrix_y / 2;
+        if (y * 2 != matrix_y) {
+          y = matrix_y / 2 + 1;
+        }
+        if (NextLine) {
+          for (int u = 0; u < y; u++) {
+            for (int i = 0; i < matrix_x; i++) {
+              if (u % 2) {
+                leds[i][u * 2] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+                leds[i][u * 2 + 1] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+              } else {
+                leds[i][u * 2] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
+                leds[i][u * 2 + 1] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
+              }
+            }
+          }
+        } else {
+          for (int u = 0; u < y; u++) {
+            for (int i = 0; i < matrix_x; i++) {
+              if (u % 2) {
+                leds[i][u * 2] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
+                leds[i][u * 2 + 1] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
+              } else {
+                leds[i][u * 2] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+                leds[i][u * 2 + 1] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+              }
+            }
+          }
+        }
+        break;
+      case 4: //Left
+      case 6: //right
+        black();
+        x = matrix_x / 2;
+        if (x * 2 != matrix_x) {
+          x = matrix_x / 2 + 1;
+        }
+        if (NextLine) {
+          for (int i = 0; i < x; i++) {
+            for (int u = 0; u < matrix_y; u++) {
+              if (i % 2) {
+                leds[i * 2][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+                leds[i * 2 + 1][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+              } else {
+                leds[i * 2][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
+                leds[i * 2 + 1][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
+              }
+            }
+          }
+        } else {
+          for (int i = 0; i < x; i++) {
+            for (int u = 0; u < matrix_y; u++) {
+              if (i % 2) {
+                leds[i * 2][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
+                leds[i * 2 + 1][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
+              } else {
+                leds[i * 2][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+                leds[i * 2 + 1][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+              }
+            }
+          }
+        }
+        break;
+    }
+  }
 }
 
 void FullFlash() {
@@ -136,9 +468,10 @@ void FullFlash() {
 
 void HalfFlash() {
   unsigned long CurMillis_Effect = millis();
-  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed * 10) {
+  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed * 2) {
     PrevMillis_Effect = CurMillis_Effect;
     if (nextHalfFlash) {
+      black();
       if (SwapHalfFlash) {
         for (int i = 0 ; i < (matrix_x / 2); i++) {
           for (int u = 0; u < matrix_y; u++) {
@@ -149,7 +482,6 @@ void HalfFlash() {
         NextColor = true;
         SwapHalfFlash = false;
       } else {
-        black();
         for (int i = (matrix_x / 2) ; i < matrix_x; i++) {
           for (int u = 0; u < matrix_y; u++) {
             leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
@@ -160,7 +492,15 @@ void HalfFlash() {
         SwapHalfFlash = true;
       }
     }
-    nextHalfFlash = fadeall(FadeSpeed);
+    if (AllowFade) {
+      nextHalfFlash = fadeall(FadeSpeed);
+    } else {
+      if (nextHalfFlash) {
+        nextHalfFlash = false;
+      } else {
+        nextHalfFlash = true;
+      }
+    }
   }
 }
 
@@ -169,6 +509,7 @@ void QuarterFlash() {
   if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
     PrevMillis_Effect = CurMillis_Effect;
     if (nextQuarterFlash) {
+      black();
       for (int i = (matrix_x / 4) * FlashSection ; i < (matrix_x / 4) * (FlashSection + 1); i++) {
         for (int u = 0; u < matrix_y; u++) {
           leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
@@ -181,7 +522,15 @@ void QuarterFlash() {
         FlashSection = 0;
       }
     }
-    nextQuarterFlash = fadeall(FadeSpeed);
+    if (AllowFade) {
+      nextQuarterFlash = fadeall(FadeSpeed);
+    } else {
+      if (nextQuarterFlash) {
+        nextQuarterFlash = false;
+      } else {
+        nextQuarterFlash = true;
+      }
+    }
   }
 }
 
@@ -190,6 +539,7 @@ void EighthFlash() {
   if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
     PrevMillis_Effect = CurMillis_Effect;
     if (nextEighthFlash) {
+      black();
       for (int i = (matrix_x / 4) * XFlashSection ; i < (matrix_x / 4) * (XFlashSection + 1); i++) {
         for (int u = (matrix_y / 2) * YFlashSection; u < (matrix_y / 2) * (YFlashSection + 1); u++) {
           leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
@@ -207,7 +557,15 @@ void EighthFlash() {
         }
       }
     }
-    nextEighthFlash = fadeall(FadeSpeed);
+    if (AllowFade) {
+      nextQuarterFlash = fadeall(FadeSpeed);
+    } else {
+      if (nextEighthFlash) {
+        nextEighthFlash = false;
+      } else {
+        nextEighthFlash = true;
+      }
+    }
   }
 }
 
@@ -528,14 +886,27 @@ void DiscoField() {
 
 void Rave() {
   if (InitRave) {
-    //Init RaveArray
-    int NeededSteps = 256 / matrix_x;
-    int RaveHue = 0;
-    for (int i = 0; i < matrix_x; i++) {
-      for (int u = 0; u < matrix_y; u++) {
-        leds[i][u] = CHSV(RaveHue, 255, 255);
+    if (EffectDirection == 6 || EffectDirection == 4) {
+      //Init RaveArray for Left / Right
+      int NeededStepsX = 256 / matrix_x;
+      int RaveHue = 0;
+      for (int i = 0; i < matrix_x; i++) {
+        for (int u = 0; u < matrix_y; u++) {
+          leds[i][u] = CHSV(RaveHue, 255, 255);
+        }
+        RaveHue = RaveHue + NeededStepsX;
       }
-      RaveHue = RaveHue + NeededSteps;
+    }
+    if (EffectDirection == 8 || EffectDirection == 2) {
+      //Init RaveArray for Up / Down
+      int NeededStepsY = 256 / matrix_y;
+      int RaveHue = 0;
+      for (int u = 0; u < matrix_y; u++) {
+        for (int i = 0; i < matrix_x; i++) {
+          leds[i][u] = CHSV(RaveHue, 255, 255);
+        }
+        RaveHue = RaveHue + NeededStepsY;
+      }
     }
     InitRave = false;
   } else {
@@ -543,33 +914,73 @@ void Rave() {
     unsigned long CurMillis_Effect = millis();
     if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
       PrevMillis_Effect = CurMillis_Effect;
-      ShiftArrayToLeft();
+      switch (EffectDirection) {
+
+        case 8: //Up
+          ShiftArrayUp();
+          break;
+
+        case 6: //Right
+          ShiftArrayRight();
+
+          break;
+
+        case 2: //Down
+          ShiftArrayDown();
+          break;
+
+        case 4: //Left
+          ShiftArrayLeft();
+          break;
+
+      }
     }
   }
   //For Random Color Sync
   ColorPickerRandomSyncNotSupported();
 }
 
-void ShiftArrayToLeft() {
+void ShiftArrayUp() {
+  for (int u = 0; u < matrix_y - 1; u++) {
+    for (int i = 0; i < matrix_x; i++) {
+      leds[i][u] = leds[i][u + 1];
+    }
+  }
+  for (int i = 0; i < matrix_x; i++) {
+    leds[i][matrix_y - 1] = leds[i][0];
+  }
+}
+
+void ShiftArrayDown() {
+  for (int u = matrix_y; u > 0; u--) {
+    for (int i = 0; i < matrix_x; i++) {
+      leds[i][u] = leds[i][u - 1];
+    }
+  }
+  for (int i = 0; i < matrix_x; i++) {
+    leds[i][0] = leds[i][matrix_y - 1];
+  }
+}
+
+void ShiftArrayLeft() {
+  for (int i = 0; i < matrix_x - 1; i++) {
+    for (int u = 0; u < matrix_y; u++) {
+      leds[i][u] = leds[i + 1][u];
+    }
+  }
+  for (int u = 0; u < matrix_y; u++) {
+    leds[matrix_x - 1][u] = leds[0][u];
+  }
+}
+
+void ShiftArrayRight() {
   for (int i = matrix_x; i > 0 ; i--) {
     for (int u = 0; u < matrix_y; u++) {
       leds[i][u] = leds[i - 1][u];
     }
   }
   for (int u = 0; u < matrix_y; u++) {
-    leds[0][u] = leds[matrix_x][u];
-  }
-}
-
-void ShiftArrayToRight() {
-  //Not Working
-  for (int u = 0; u < matrix_y; u++) {
-    leds[0][u] = leds[1][u];
-  }
-  for (int i = matrix_x; i > 0 ; i--) {
-    for (int u = 0; u < matrix_y; u++) {
-      leds[i - 1][u] = leds[i][u];
-    }
+    leds[0][u] = leds[matrix_x - 1][u];
   }
 }
 
@@ -714,14 +1125,5 @@ void black() {
     }
   }
 }
-
-void fadeAllToBlack() {
-
-}
-
-void fadeAllToPrecent() {
-
-}
-
 
 //---------------------------End Global Light Effects---------------------------//

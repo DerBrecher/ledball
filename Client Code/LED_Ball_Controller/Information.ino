@@ -101,15 +101,15 @@ void printer() {
   //Prints the state of the Color Control
   if (mem_ColorControl != ColorControl) {
     Serial.println("/--------------Color--------------/");
-    Serial.print("  Color            : ");
+    Serial.print("  Color Picker     : ");
     switch (ColorControl) {
-      case 0 : Serial.println("Color Picker Normal");
+      case 0 : Serial.println("Normal");
         break;
-      case 1 : Serial.println("Color Picker Random");
+      case 1 : Serial.println("Random");
         break;
-      case 2 : Serial.println("Color Picker Rainbow");
+      case 2 : Serial.println("Rainbow");
         break;
-      case 3 : Serial.println("Color Picker Random Sync");
+      case 3 : Serial.println("Random Sync");
         break;
     }
     Serial.println("/---------------------------------/");
@@ -153,12 +153,25 @@ void printer() {
         break;
       case 13: Serial.println("EighthFlash");
         break;
-      case 14: Serial.println("");
+      case 14: Serial.println("Circus");
         break;
-      case 15: Serial.println("");
+      case 15: Serial.println("Matrix");
         break;
-      case 16: Serial.println("");
+      case 16: Serial.println("LoopSnake");
         break;
+      case 17: Serial.println("HappyBirthday");
+        break;
+      case 18: Serial.println("HappyNewYear");
+        break;
+      case 19: Serial.println("SpiralSnake");
+        break;
+      case 20: Serial.println("WaveRefresh");
+        break;
+      case 21: Serial.println("Rotor");
+        break;
+      case 22: Serial.println("Flash");
+        break;
+
 
 
       default: Serial.println("General Error Effect");

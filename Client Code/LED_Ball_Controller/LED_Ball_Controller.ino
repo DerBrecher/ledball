@@ -5,26 +5,29 @@
 #include <PubSubClient.h>
 
 //Include Secret Header
+#define LedBall1      //Define used MQTT Parameters
 #include <secrets.h>
+
 
 //for Serial print Startup Info
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "15.04.2019"
-#define Version     "1.1.8"
+#define LastModifed "19.04.2019"
+#define Version     "1.1.9"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   15.04.2019
-  Version       :   1.1.8
+  Last Modifed  :   19.04.2019
+  Version       :   1.1.9
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
                     - When the direction is used, the speed of the effects must be adjusted according to the direction. Effect speeds are time based and not pixel lenght based
                     - When gamma8 correction is used fix fade to new color with gamma8 correction
+                    - RandomColorSync Not supported fix
 
   Error Help    :   1. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
                     2. If the ball has a red ring going around it. Then its a General Error. If this happens try to pick an other effect. If this doesnt change anything
@@ -50,16 +53,17 @@
                       Added RandomColorSync and added Direction Option to some Effects. Random Color Sync only Supports some of the Effects. If the Effect not supports it, the controller will automatically use the normal color picker
                     Version 1.1.8
                       Added Heartbeat every 5sec. Added Bounce, Flash Effects.
+                    Version 1.1.9
+                      Moved MQTT Settings and Paths to Secret Header for future use. Added some New Effects and added Effect Message to Effect_Number. Fixed bug with Color Picker Random Color Sync.
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
-                    3. setSolidColor()        => Fills all LEDs with new Color
-                    4. setFadeColor()         => Fades all LEDs to new Color
-                    5. setSolidBrightness()   => Sets the Brightness to the new value
-                    6. setFadeBrightness()    => Fades the Brightness to the new value
+                    3. ShowMatrix()           => Pushes the Matrix to the LED Ball and shows it
+                    4. FadeColor()            => Fades actual Color to new Color
+                    5. FadeBrightness()       => Fades actual Brightness to new Brightness
                     7. fillSoild()            => Fills the Matrix with a choosen Color
-                    8. fadeAllToBlack()       => Fades the Matrix to Black
-                    9: fadeAllToPrecent()     => Fades the Matrix to a Percentage
+                    8. ShiftArrayToLeft()     => Shifts the Rows of the Matrix by 1 to the Left
+                    9: ShiftArrayToRight()    => Shifts the Rows of the Matrix by 1 to the Right
 
   Main Tap Info :   Owns the status machines of the LED ball and initialize the programm
 */
@@ -112,6 +116,7 @@ int LastIndexRandomColorSync = 0;
 boolean memEffectFinsihed = false;
 boolean NextColor = false;
 boolean SendNotSupported = false;
+boolean SendOnlySupported = false;
 
 //Color Control State
 int ColorControl = 0;
@@ -120,7 +125,7 @@ int ColorControl = 0;
 //Will be Serial printed in the Information Tab
 #define DEBUG_MAIN_STATE    //Prints Main State
 #define DEBUG_LIGHT_STATE   //Prints Light State
-//#define DEBUG_COLOR         //Prints the Color Control mode
+#define DEBUG_COLOR         //Prints the Color Control mode
 #define DEBUG_EFFECTS       //Prints the used Effect
 //#define DEBUG_NETWORK       //Prints MQTT Parameter
 
@@ -146,6 +151,8 @@ uint8_t FadeSpeed;        //0 - 255
 uint8_t EffectNumber;     //0 - 255
 uint8_t EffectDirection;  // 8 == Up // 6 == Right // 2 == Down // 4 == Left
 
+//Secret Control for the Random Effect
+boolean AllowFade = false;   //On / Off
 
 //Timer / Delay
 unsigned long PrevMillis_Example              = 0;
@@ -272,6 +279,53 @@ int XFlashSection = 0;
 int YFlashSection = 0;
 boolean nextEighthFlash;
 
+//----Circus
+boolean NextLine;
+boolean FadeFinishedCircus;
+
+//----Matrix
+boolean SwapMatrix;
+int YMatrixDirection = 0;
+
+//----LoopSnake
+boolean SwapLoopSnake;
+int XLoopSnakeDirection = 0;
+int YLoopSnakeDirection = 0;
+
+//----HappyBirthday
+int HappyBirthdayPosX = 0;
+int Happy_Birthday_Array[12][100] = {
+  { 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1 },
+  { 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1 },
+  { 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+  { 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+  { 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0},
+  { 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0},
+  { 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+  { 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+  { 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+  { 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+  { 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+  { 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}
+};
+
+//----HappNewYear
+
+
+//----SpiralSnake
+int XSpiralSnakeDirection = 0;
+int YSpiralSnakeDirection = 0;
+
+//----WaveRefresh
+int XPosWaveRefresh = 0;
+int YPosWaveRefresh = 0;
+
+//----Rotor
+int XPositionRotor = 0;
+
+//----Flash
+int SwapFlash = false;
+
 //gamma8 Array that replaces the calculate RGB Values in the function ShowMatrix if activated
 const uint8_t gamma8[] = {
   0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  2,  2,  2,
@@ -331,59 +385,6 @@ int mem_EffectNumber;
 //*************************************************************************************************//
 WiFiClient    wifiMqtt;
 PubSubClient  mqtt_Client(wifiMqtt);
-#define mqtt_server       "192.168.99.23"
-#define mqtt_username     "pi"
-#define mqtt_password     "raspberry"
-#define mqtt_port         1883
-#define mqtt_client_name  "ControllerLedBall1"
-
-//------------------------------------- Mqtt Paths --------------------------------------//
-//Parameter [mqtt_Power]
-const char* mqtt_state_Power           = "ledball/state/Power";
-const char* mqtt_command_Power         = "ledball/command/Power";
-
-//Parameter [mqtt_RandomColor]
-const char* mqtt_state_RandomColor     = "ledball/state/RandomColor";
-const char* mqtt_command_RandomColor   = "ledball/command/RandomColor";
-
-//Parameter [boolean mqtt_RainbowColor]
-const char* mqtt_state_RainbowColor    = "ledball/state/RainbowColor";
-const char* mqtt_command_RainbowColor  = "ledball/command/RainbowColor";
-
-//Parameter [mqtt_RandomColorSync]
-const char* mqtt_state_RandomColorSync    = "ledball/state/RandomColorSync";
-const char* mqtt_command_RandomColorSync  = "ledball/command/RandomColorSync";
-
-//Parameter [mqtt_Red, mqtt_Green, mqtt_Blue]
-const char* mqtt_state_Color          = "ledball/state/Color";
-const char* mqtt_command_Color        = "ledball/command/Color";
-
-//Parameter [mqtt_Brightness]
-const char* mqtt_state_Brightness     = "ledball/state/Brightness";
-const char* mqtt_command_Brightness   = "ledball/command/Brightness";
-
-//Parameter [mqtt_RandomEffect]
-const char* mqtt_state_RandomEffect     = "ledball/state/RandomEffect";
-const char* mqtt_command_RandomEffect   = "ledball/command/RandomEffect";
-
-//Parameter [mqtt_EffectSpeed]
-const char* mqtt_state_EffectSpeed     = "ledball/state/EffectSpeed";
-const char* mqtt_command_EffectSpeed   = "ledball/command/EffectSpeed";
-
-//Parameter [mqtt_FadeSpeed]
-const char* mqtt_state_FadeSpeed     = "ledball/state/FadeSpeed";
-const char* mqtt_command_FadeSpeed   = "ledball/command/FadeSpeed";
-
-//Parameter [mqtt_EffectNumber]
-const char* mqtt_state_EffectNumber     = "ledball/state/EffectNumber";
-const char* mqtt_command_EffectNumber   = "ledball/command/EffectNumber";
-
-//Parameter [mqtt_EffectDirection]
-const char* mqtt_state_EffectDirection     = "ledball/state/EffectDirection";
-const char* mqtt_command_EffectDirection   = "ledball/command/EffectDirection";
-
-//Heartbeat
-const char* mqtt_heartbeat  = "ledball/heartbeat";
 
 //---- LED Ball Control Parameter from MQTT ----//
 /*
@@ -602,10 +603,11 @@ void lightControl() {
   switch (LightState) {
 
     case 10: //Random Effect Picker
-
+      RandomEffectPicker();
       break;
 
     case 20: //Single Effect Picker
+
       switch (EffectNumber) {
 
         case 0: //Effect Black
@@ -664,6 +666,52 @@ void lightControl() {
           EighthFlash();
           break;
 
+        case 14: //Circus
+          Circus();
+          break;
+
+        case 15: //Matrix
+          Matrix();
+          break;
+
+        case 16: //LoopSnake
+          LoopSnake();
+          break;
+
+        case 17: //HappyBirthday
+          //Only Works with Matrix of 16 * 25
+          if (matrix_x == 16 && matrix_y == 25) {
+            HappyBirthday();
+          } else {
+            GeneralErrorEffect();
+          }
+          break;
+
+        case 18: //HappyNewYear
+          //Only Works with Matrix of 16 * 25
+          if (matrix_x == 16 && matrix_y == 25) {
+            HappyNewYear();
+          } else {
+            GeneralErrorEffect();
+          }
+          break;
+
+        case 19: //SpiralSnake
+          SpiralSnake();
+          break;
+
+        case 20: //WaveRefresh
+          WaveRefresh();
+          break;
+
+        case 21: //Rotor
+          Rotor();
+          break;
+
+        case 22: //Flash
+          Flash();
+          break;
+
         default: //Effect Status Effect Error
           GeneralErrorEffect();
           break;
@@ -677,11 +725,11 @@ void lightControl() {
       break;
 
     case 30: //No Power State
-      fadeall(220);
+      fadeall(230);
       break;
 
     default: //Default fade all
-      fadeall(220);
+      fadeall(230);
       break;
   }
 
@@ -913,7 +961,27 @@ void ColorPickerRandomSyncNotSupported() {
   }
   //Reset Light Control switch
   RandomColorSync = false;
+  mqtt_RandomColorSync = false;
 }
+
+//------------------------- Set Color Picker to Random Color Sync -------------------------//
+void ColorPickerRandomSyncOnlySupported() {
+  if (SendOnlySupported) {
+    //Reset MQTT Switch
+    mqtt_Client.publish(mqtt_command_RandomColorSync, "1"); //Turn on Random Color Sync
+    mqtt_Client.publish(mqtt_command_RandomColor, "0"); //Turn of Random Color
+    mqtt_Client.publish(mqtt_command_RainbowColor, "0"); //Turn of Rainbow
+    SendOnlySupported = false;
+  }
+  //Reset Light Control switch
+  RandomColorSync = true;
+  RandomColor     = false;
+  RainbowColor    = false;
+  mqtt_RandomColorSync = true;
+  mqtt_RandomColor     = false;
+  mqtt_RainbowColor    = false;
+}
+
 
 //--------------------------- Sync Parameter ---------------------------//
 void syncParameter() {
