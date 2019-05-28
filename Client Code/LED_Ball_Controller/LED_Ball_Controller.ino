@@ -3,6 +3,7 @@
 //#include <ESP8266WiFi.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <EEPROM.h>
 
 //Include Secret Header
 #define LedBall1      //Define used MQTT Parameters
@@ -13,21 +14,25 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "19.04.2019"
-#define Version     "1.1.9"
+#define LastModifed "28.05.2019"
+#define Version     "1.1.11"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   19.04.2019
-  Version       :   1.1.9
+  Last Modifed  :   28.05.2019
+  Version       :   1.1.11
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
                     - When the direction is used, the speed of the effects must be adjusted according to the direction. Effect speeds are time based and not pixel lenght based
                     - When gamma8 correction is used fix fade to new color with gamma8 correction
-                    - RandomColorSync Not supported fix
+                    - Delete Init MQTT Paramter. Gets read from the EEPROM
+
+  Bugs          :   - Color Picker goes to white after time.
+
+  Optimize      :   1. Put MQTT Paths in Secret Header into an Array and add an Array for the Recived Data
 
   Error Help    :   1. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
                     2. If the ball has a red ring going around it. Then its a General Error. If this happens try to pick an other effect. If this doesnt change anything
@@ -55,6 +60,10 @@
                       Added Heartbeat every 5sec. Added Bounce, Flash Effects.
                     Version 1.1.9
                       Moved MQTT Settings and Paths to Secret Header for future use. Added some New Effects and added Effect Message to Effect_Number. Fixed bug with Color Picker Random Color Sync.
+                    Version 1.1.10
+                      Added new Color Picker "Filter Color Multi". Supports Normal Fade to Color and Color Sync. Added saving the Settings of the Ball to the EEPROM of the ESP and loading it on the startup
+                    Version 1.1.11
+                      Finished implementation of MQTT Paths etc for "Filter Color Multi"
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
@@ -74,6 +83,7 @@
 
 //Developer mode skips some initializations and blocks startup effects for shorter Startup time.
 boolean DevMode = true;
+boolean DevFilter = true;
 
 //--- LED Ball Parameters ---//
 #define NUM_LEDS 400                      //Number of LEDs from the Ball
@@ -100,6 +110,13 @@ int LightState = 0;                 //Status of the Light State Machine
 //--- HeartBeat ---//
 unsigned long HeartBeatCounter = 0;
 
+//------------ EEPROM Settings ------------//
+//Actual Size 26 Bytes. Date 21.04.2019
+int EEPROM_Size = 32; //Size for the saving of the Settings in the EEPROM (BYTE)
+boolean EEPROM_NewDataToSave = false;
+boolean EEPROM_EspNewBoot = true;
+//------------ End EEPROM Settings ------------//
+
 //Normal Color
 
 //Rainbow Color
@@ -118,6 +135,12 @@ boolean NextColor = false;
 boolean SendNotSupported = false;
 boolean SendOnlySupported = false;
 
+//Filter Color Multi
+boolean Filter1Active = false;
+boolean Filter2Active = false;
+boolean Filter3Active = false;
+boolean Filter4Active = false;
+
 //Color Control State
 int ColorControl = 0;
 
@@ -127,7 +150,7 @@ int ColorControl = 0;
 #define DEBUG_LIGHT_STATE   //Prints Light State
 #define DEBUG_COLOR         //Prints the Color Control mode
 #define DEBUG_EFFECTS       //Prints the used Effect
-//#define DEBUG_NETWORK       //Prints MQTT Parameter
+#define DEBUG_NETWORK       //Prints MQTT Parameter
 
 //LED Ball Control Parameter
 //Truns the Ball ON / OFF
@@ -137,19 +160,32 @@ boolean Power;            //On / Off
 boolean RandomColor;      //On / Off
 boolean RainbowColor;     //On / Off
 boolean RandomColorSync;  //On / Off
-uint8_t Red;              //0 - 255
-uint8_t Green;            //0 - 255
-uint8_t Blue;             //0 - 255
+boolean FilterColorMulti; //On / Off
+byte Filter1Red;       //0 - 255
+byte Filter1Green;     //0 - 255
+byte Filter1Blue;      //0 - 255
+byte Filter2Red;       //0 - 255
+byte Filter2Green;     //0 - 255
+byte Filter2Blue;      //0 - 255
+byte Filter3Red;       //0 - 255
+byte Filter3Green;     //0 - 255
+byte Filter3Blue;      //0 - 255
+byte Filter4Red;       //0 - 255
+byte Filter4Green;     //0 - 255
+byte Filter4Blue;      //0 - 255
+byte Red;              //0 - 255
+byte Green;            //0 - 255
+byte Blue;             //0 - 255
 
 //Controls the Brightness of the Ball
-uint8_t Brightness;       //0 - 255
+byte Brightness;       //0 - 255
 
 //Controls the Effect show on the Ball
-boolean RandomEffect;     //On / Off
-uint8_t EffectSpeed;      //0 - 100
-uint8_t FadeSpeed;        //0 - 255
-uint8_t EffectNumber;     //0 - 255
-uint8_t EffectDirection;  // 8 == Up // 6 == Right // 2 == Down // 4 == Left
+boolean RandomEffect;  //On / Off
+byte EffectSpeed;      //0 - 100
+byte FadeSpeed;        //0 - 255
+byte EffectNumber;     //0 - 255
+byte EffectDirection;  // 8 == Up // 6 == Right // 2 == Down // 4 == Left
 
 //Secret Control for the Random Effect
 boolean AllowFade = false;   //On / Off
@@ -356,6 +392,19 @@ boolean mem_mqtt_Power;
 boolean mem_mqtt_RandomColor;
 boolean mem_mqtt_RainbowColor;
 boolean mem_mqtt_RandomColorSync;
+boolean mem_mqtt_FilterColorMulti;
+uint8_t mem_mqtt_Filter1Red;
+uint8_t mem_mqtt_Filter1Green;
+uint8_t mem_mqtt_Filter1Blue;
+uint8_t mem_mqtt_Filter2Red;
+uint8_t mem_mqtt_Filter2Green;
+uint8_t mem_mqtt_Filter2Blue;
+uint8_t mem_mqtt_Filter3Red;
+uint8_t mem_mqtt_Filter3Green;
+uint8_t mem_mqtt_Filter3Blue;
+uint8_t mem_mqtt_Filter4Red;
+uint8_t mem_mqtt_Filter4Green;
+uint8_t mem_mqtt_Filter4Blue;
 uint8_t mem_mqtt_Red;
 uint8_t mem_mqtt_Green;
 uint8_t mem_mqtt_Blue;
@@ -396,17 +445,30 @@ boolean mqtt_Power;
 boolean mqtt_RandomColor;
 boolean mqtt_RainbowColor;
 boolean mqtt_RandomColorSync;
-uint8_t mqtt_Red;
-uint8_t mqtt_Green;
-uint8_t mqtt_Blue;
+boolean mqtt_FilterColorMulti;
+byte    mqtt_Filter1Red;
+byte    mqtt_Filter1Green;
+byte    mqtt_Filter1Blue;
+byte    mqtt_Filter2Red;
+byte    mqtt_Filter2Green;
+byte    mqtt_Filter2Blue;
+byte    mqtt_Filter3Red;
+byte    mqtt_Filter3Green;
+byte    mqtt_Filter3Blue;
+byte    mqtt_Filter4Red;
+byte    mqtt_Filter4Green;
+byte    mqtt_Filter4Blue;
+byte    mqtt_Red;
+byte    mqtt_Green;
+byte    mqtt_Blue;
 
-uint8_t mqtt_Brightness;
+byte    mqtt_Brightness;
 
 boolean mqtt_RandomEffect;
-uint8_t mqtt_EffectSpeed;
-uint8_t mqtt_FadeSpeed;
-uint8_t mqtt_EffectNumber;
-uint8_t mqtt_EffectDirection;
+byte    mqtt_EffectSpeed;
+byte    mqtt_FadeSpeed;
+byte    mqtt_EffectNumber;
+byte    mqtt_EffectDirection;
 
 
 //WiFi
@@ -444,6 +506,10 @@ void setup() {
   Serial.println("");
 
   Serial.println("Start Setup");
+
+  Serial.println("Initialize EEPROM");
+  EEPROM.begin(EEPROM_Size);
+  Serial.println("Finihsed Initialization EEPROM");
 
   Serial.println("Set MQTT Parameter");
   mqtt_Client.setServer(mqtt_server, mqtt_port);
@@ -521,7 +587,14 @@ void loop() {
 
     case 20: //Initialization of Arrays who are used in Effects and have to be preloaded
       InitEffectArrays();
-      MainState = 30;
+      MainState = 25;
+      break;
+
+    case 25: //Load Settings from EEPROM
+      if (mqtt_Client.connected() and WiFi.status() == WL_CONNECTED) {
+        LoadSettings();
+        MainState = 30;
+      }
       break;
 
     case 30: //Startup Effect to show the User that the Ball is ready to use
@@ -544,6 +617,8 @@ void loop() {
     case 100: //Goes into the State Machine for the Light Effects
       //Syncs Main Parameter with the Paramter from MQTT
       syncParameter();
+      //Saves New Parameter Changes to the EEPROM
+      SaveSettings();
       //Light Control
       lightControl();
       break;
@@ -564,27 +639,33 @@ void loop() {
 void lightControl() {
 
   //Decides wich Color Effect is used
-  if (not RandomColor && not RainbowColor && not RandomColorSync) {
+  if (not RandomColor && not RainbowColor && not RandomColorSync && not FilterColorMulti) {
     //Normal Color
     ColorPickerNormal();
     ColorControl = 0;
   }
-  if (RandomColor && not RainbowColor && not RandomColorSync) {
+  if (RandomColor && not RainbowColor && not RandomColorSync && not FilterColorMulti) {
     //Random Color
     ColorPickerRandom();
     ColorControl = 1;
   }
-  if (not RandomColor && RainbowColor && not RandomColorSync) {
+  if (not RandomColor && RainbowColor && not RandomColorSync && not FilterColorMulti) {
     //Rainbow Color
     ColorPickerRainbow();
     ColorControl = 2;
   }
-  if (not RandomColor && not RainbowColor &&  RandomColorSync) {
+  if (not RandomColor && not RainbowColor &&  RandomColorSync && not FilterColorMulti) {
     //Random Color Sync
     ColorPickerRandomSync(NextColor);
     //Reset NextColor
     NextColor = false;
     ColorControl = 3;
+  }
+  if (not RandomColor && not RainbowColor && not RandomColorSync && FilterColorMulti) {
+    //Filter Color Multi
+    ColorPickerFilterColorMulti(NextColor);
+    //Reset NextColor
+    ColorControl = 4;
   }
 
   //Decides wich Effect is used
@@ -597,7 +678,6 @@ void lightControl() {
   } else {
     LightState = 30;
   }
-
 
   //Light State machine
   switch (LightState) {
@@ -883,7 +963,7 @@ void ColorPickerRainbow() {
 }
 
 
-//--------------------------- Rainbow Color ---------------------------//
+//--------------------------- Random Color Sync ---------------------------//
 void ColorPickerRandomSync(boolean EffectFinsihed) {
   //!Warning! this Color Picker is not Supported by all Effects//
 
@@ -952,6 +1032,12 @@ void ColorPickerRandomSync(boolean EffectFinsihed) {
   memEffectFinsihed = EffectFinsihed;
 }
 
+//--------------------------- Random Color Sync ---------------------------//
+void ColorPickerFilterColorMulti(boolean EffectFinsihed) {
+
+
+}
+
 //--------------------------- Reset Color Picker to Normal ---------------------------//
 void ColorPickerRandomSyncNotSupported() {
   if (SendNotSupported) {
@@ -990,6 +1076,19 @@ void syncParameter() {
   RandomColor       = mqtt_RandomColor;
   RainbowColor      = mqtt_RainbowColor;
   RandomColorSync   = mqtt_RandomColorSync;
+  FilterColorMulti  = mqtt_FilterColorMulti;
+  Filter1Red        = mqtt_Filter1Red;
+  Filter1Green      = mqtt_Filter1Green;
+  Filter1Blue       = mqtt_Filter1Blue;
+  Filter2Red        = mqtt_Filter2Red;
+  Filter2Green      = mqtt_Filter2Green;
+  Filter2Blue       = mqtt_Filter2Blue;
+  Filter3Red        = mqtt_Filter3Red;
+  Filter3Green      = mqtt_Filter3Green;
+  Filter3Blue       = mqtt_Filter3Blue;
+  Filter4Red        = mqtt_Filter4Red;
+  Filter4Green      = mqtt_Filter4Green;
+  Filter4Blue       = mqtt_Filter4Blue;
   //Red             = mqtt_Red;   //
   //Green           = mqtt_Green; //Gets set in Color Methodes
   //Blue            = mqtt_Blue;  //
@@ -1008,6 +1107,19 @@ void InitMqttParameter() {
   mqtt_RandomColor      = false;
   mqtt_RainbowColor     = false;
   mqtt_RandomColorSync  = false;
+  mqtt_FilterColorMulti = false;
+  mqtt_Filter1Red       = 0;
+  mqtt_Filter1Green     = 0;
+  mqtt_Filter1Blue      = 0;
+  mqtt_Filter2Red       = 0;
+  mqtt_Filter2Green     = 0;
+  mqtt_Filter2Blue      = 0;
+  mqtt_Filter3Red       = 0;
+  mqtt_Filter3Green     = 0;
+  mqtt_Filter3Blue      = 0;
+  mqtt_Filter4Red       = 0;
+  mqtt_Filter4Green     = 0;
+  mqtt_Filter4Blue      = 0;
   mqtt_Red              = 0;
   mqtt_Green            = 128;
   mqtt_Blue             = 255;
@@ -1017,9 +1129,169 @@ void InitMqttParameter() {
   mqtt_FadeSpeed        = 10;
   mqtt_EffectNumber     = 0;
   mqtt_EffectDirection  = 8;
+
+  //Dev Mode for Filter
+  if (DevFilter) {
+    //Filter 1
+    mqtt_Filter1Red       = 255;
+    mqtt_Filter1Green     = 0;
+    mqtt_Filter1Blue      = 0;
+    Filter1Active         = true;
+    //Filter 2
+    mqtt_Filter2Red       = 255;
+    mqtt_Filter2Green     = 128;
+    mqtt_Filter2Blue      = 0;
+    Filter2Active         = true;
+    //Filter 3
+    mqtt_Filter3Red       = 0;
+    mqtt_Filter3Green     = 0;
+    mqtt_Filter3Blue      = 0;
+    Filter3Active         = false;
+    //Filter 4
+    mqtt_Filter4Red       = 0;
+    mqtt_Filter4Green     = 0;
+    mqtt_Filter4Blue      = 0;
+    Filter4Active         = false;
+  }
 }
 
 //--------------------------- Init Effect Arrays ---------------------------//
 void InitEffectArrays() {
 
+}
+
+//--------------------------- Save Settings ---------------------------//
+void SaveSettings() {
+  if (EEPROM_NewDataToSave) {
+    //Save Settings to the EEPROM
+    EEPROM.write(0 , Power);
+    EEPROM.write(1 , RandomColor);
+    EEPROM.write(2 , RainbowColor);
+    EEPROM.write(3 , RandomColorSync);
+    EEPROM.write(4 , FilterColorMulti);
+    EEPROM.write(5 , Filter1Red);
+    EEPROM.write(6 , Filter1Green);
+    EEPROM.write(7 , Filter1Blue);
+    EEPROM.write(8 , Filter2Red);
+    EEPROM.write(9 , Filter2Green);
+    EEPROM.write(10, Filter2Blue);
+    EEPROM.write(11, Filter3Red);
+    EEPROM.write(12, Filter3Green);
+    EEPROM.write(13, Filter3Blue);
+    EEPROM.write(14, Filter4Red);
+    EEPROM.write(15, Filter4Green);
+    EEPROM.write(16, Filter4Blue);
+    EEPROM.write(17, Red);
+    EEPROM.write(18, Green);
+    EEPROM.write(19, Blue);
+    EEPROM.write(20, Brightness);
+    EEPROM.write(21, RandomEffect);
+    EEPROM.write(22, EffectSpeed);
+    EEPROM.write(23, FadeSpeed);
+    EEPROM.write(24, EffectNumber);
+    EEPROM.write(25, EffectDirection);
+
+    EEPROM.commit();
+    delay(10);
+    EEPROM_NewDataToSave = false;
+  }
+}
+
+//--------------------------- Load Settings ---------------------------//
+void LoadSettings() {
+  if (EEPROM_EspNewBoot) {
+    //Load Settings from EEPROM
+    mqtt_Power             = EEPROM.read(0);
+    mqtt_RandomColor       = EEPROM.read(1);
+    mqtt_RainbowColor      = EEPROM.read(2);
+    mqtt_RandomColorSync   = EEPROM.read(3);
+    mqtt_FilterColorMulti  = EEPROM.read(4);
+    mqtt_Filter1Red        = EEPROM.read(5);
+    mqtt_Filter1Green      = EEPROM.read(6);
+    mqtt_Filter1Blue       = EEPROM.read(7);
+    mqtt_Filter2Red        = EEPROM.read(8);
+    mqtt_Filter2Green      = EEPROM.read(9);
+    mqtt_Filter2Blue       = EEPROM.read(10);
+    mqtt_Filter3Red        = EEPROM.read(11);
+    mqtt_Filter3Green      = EEPROM.read(12);
+    mqtt_Filter3Blue       = EEPROM.read(13);
+    mqtt_Filter4Red        = EEPROM.read(14);
+    mqtt_Filter4Green      = EEPROM.read(15);
+    mqtt_Filter4Blue       = EEPROM.read(16);
+    mqtt_Red               = EEPROM.read(17);
+    mqtt_Green             = EEPROM.read(18);
+    mqtt_Blue              = EEPROM.read(19);
+    mqtt_Brightness        = EEPROM.read(20);
+    mqtt_RandomEffect      = EEPROM.read(21);
+    mqtt_EffectSpeed       = EEPROM.read(22);
+    mqtt_FadeSpeed         = EEPROM.read(23);
+    mqtt_EffectNumber      = EEPROM.read(24);
+    mqtt_EffectDirection   = EEPROM.read(25);
+
+    //Publish Settings to MQTT
+    //Send last Power state
+    if (mqtt_Power) {
+      mqtt_Client.publish(mqtt_state_Power, "ON");
+    } else {
+      mqtt_Client.publish(mqtt_state_Power, "OFF");
+    }
+    delay(10);
+
+    char message[16];
+
+    //Color Picker
+    sprintf(message, "%d", mqtt_RandomColor);
+    mqtt_Client.publish(mqtt_state_RandomColor, message);
+    delay(10);
+    sprintf(message, "%d", mqtt_RainbowColor);
+    mqtt_Client.publish(mqtt_state_RainbowColor, message);
+    delay(10);
+    sprintf(message, "%d", mqtt_RandomColorSync);
+    mqtt_Client.publish(mqtt_state_RandomColorSync, message);
+    delay(10);
+    sprintf(message, "%d", mqtt_FilterColorMulti);
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, message);
+    delay(10);
+
+    //Filter
+    sprintf(message, "%d,%d,%d", mqtt_Filter1Red, mqtt_Filter1Green, mqtt_Filter1Blue);
+    mqtt_Client.publish(mqtt_state_Filter1, message);
+    delay(10);
+    sprintf(message, "%d,%d,%d", mqtt_Filter2Red, mqtt_Filter2Green, mqtt_Filter2Blue);
+    mqtt_Client.publish(mqtt_state_Filter2, message);
+    delay(10);
+    sprintf(message, "%d,%d,%d", mqtt_Filter3Red, mqtt_Filter3Green, mqtt_Filter3Blue);
+    mqtt_Client.publish(mqtt_state_Filter3, message);
+    delay(10);
+    sprintf(message, "%d,%d,%d", mqtt_Filter4Red, mqtt_Filter4Green, mqtt_Filter4Blue);
+    mqtt_Client.publish(mqtt_state_Filter4, message);
+    delay(10);
+
+    //Color
+    sprintf(message, "%d,%d,%d", mqtt_Red, mqtt_Green, mqtt_Blue);
+    mqtt_Client.publish(mqtt_state_Color, message);
+    delay(10);
+
+    //Others
+    sprintf(message, "%d", mqtt_Brightness);
+    mqtt_Client.publish(mqtt_state_Brightness, message);
+    delay(10);
+    sprintf(message, "%d", mqtt_RandomEffect);
+    mqtt_Client.publish(mqtt_state_RandomEffect, message);
+    delay(10);
+    sprintf(message, "%d", mqtt_EffectSpeed);
+    mqtt_Client.publish(mqtt_state_EffectSpeed, message);
+    delay(10);
+    sprintf(message, "%d", mqtt_FadeSpeed);
+    mqtt_Client.publish(mqtt_state_FadeSpeed, message);
+    delay(10);
+    sprintf(message, "%d", mqtt_EffectNumber);
+    mqtt_Client.publish(mqtt_state_EffectNumber, message);
+    delay(10);
+    sprintf(message, "%d", mqtt_EffectDirection);
+    mqtt_Client.publish(mqtt_state_EffectDirection, message);
+    delay(10);
+
+    EEPROM_EspNewBoot = false;
+  }
 }

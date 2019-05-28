@@ -11,6 +11,19 @@ void printer() {
         mem_mqtt_RandomColor      != mqtt_RandomColor or
         mem_mqtt_RainbowColor     != mqtt_RainbowColor or
         mem_mqtt_RandomColorSync  != mqtt_RandomColorSync or
+        mem_mqtt_FilterColorMulti != mqtt_FilterColorMulti or
+        mem_mqtt_Filter1Red       != mqtt_Filter1Red or
+        mem_mqtt_Filter1Green     != mqtt_Filter1Green or
+        mem_mqtt_Filter1Blue      != mqtt_Filter1Blue or
+        mem_mqtt_Filter2Red       != mqtt_Filter2Red or
+        mem_mqtt_Filter2Green     != mqtt_Filter2Green or
+        mem_mqtt_Filter2Blue      != mqtt_Filter2Blue or
+        mem_mqtt_Filter3Red       != mqtt_Filter3Red or
+        mem_mqtt_Filter3Green     != mqtt_Filter3Green or
+        mem_mqtt_Filter3Blue      != mqtt_Filter3Blue or
+        mem_mqtt_Filter4Red       != mqtt_Filter4Red or
+        mem_mqtt_Filter4Green     != mqtt_Filter4Green or
+        mem_mqtt_Filter4Blue      != mqtt_Filter4Blue or
         mem_mqtt_Red              != mqtt_Red or
         mem_mqtt_Green            != mqtt_Green or
         mem_mqtt_Blue             != mqtt_Blue or
@@ -21,31 +34,70 @@ void printer() {
         mem_mqtt_EffectNumber     != mqtt_EffectNumber or
         mem_mqtt_EffectDirection  != mqtt_EffectDirection)) {
     Serial.println("/--------Network Parameter--------/");
-    Serial.print("  Power            : ");
+    //Power
+    Serial.print("  Power              : ");
     Serial.println(mqtt_Power);
-    Serial.print("  RandomColor      : ");
+    //Color Picker
+    Serial.print("  RandomColor        : ");
     Serial.println(mqtt_RandomColor);
-    Serial.print("  Rainbow Color    : ");
+    Serial.print("  Rainbow Color      : ");
     Serial.println(mqtt_RainbowColor);
-    Serial.print("  Random ColorSync : ");
+    Serial.print("  Random Color Sync  : ");
     Serial.println(mqtt_RandomColorSync);
-    Serial.print("  Color Red        : ");
+    Serial.print("  Filter Color Multi : ");
+    Serial.println(mqtt_FilterColorMulti);
+    //Filter 1
+    Serial.print("  Filter 1 Red       : ");
+    Serial.println(mqtt_Filter1Red);
+    Serial.print("  Filter 1 Green     : ");
+    Serial.println(mqtt_Filter1Green);
+    Serial.print("  Filter 1 Blue      : ");
+    Serial.println(mqtt_Filter1Blue);
+    //Filter 2
+    Serial.print("  Filter 2 Red       : ");
+    Serial.println(mqtt_Filter2Red);
+    Serial.print("  Filter 2 Green     : ");
+    Serial.println(mqtt_Filter2Green);
+    Serial.print("  Filter 2 Blue      : ");
+    Serial.println(mqtt_Filter2Blue);
+    //Filter 3
+    Serial.print("  Filter 3 Red       : ");
+    Serial.println(mqtt_Filter3Red);
+    Serial.print("  Filter 3 Green     : ");
+    Serial.println(mqtt_Filter3Green);
+    Serial.print("  Filter 3 Blue      : ");
+    Serial.println(mqtt_Filter3Blue);
+    //Filter 4
+    Serial.print("  Filter 4 Red       : ");
+    Serial.println(mqtt_Filter4Red);
+    Serial.print("  Filter 4 Green     : ");
+    Serial.println(mqtt_Filter4Green);
+    Serial.print("  Filter 4 Blue      : ");
+    Serial.println(mqtt_Filter4Blue);
+    //Color Normal
+    Serial.print("  Color Red          : ");
     Serial.println(mqtt_Red);
-    Serial.print("  Color Green      : ");
+    Serial.print("  Color Green        : ");
     Serial.println(mqtt_Green);
-    Serial.print("  Color Blue       : ");
+    Serial.print("  Color Blue         : ");
     Serial.println(mqtt_Blue);
-    Serial.print("  Brightness       : ");
+    //Brightness
+    Serial.print("  Brightness         : ");
     Serial.println(mqtt_Brightness);
-    Serial.print("  Random Effect    : ");
+    //Random Effect
+    Serial.print("  Random Effect      : ");
     Serial.println(mqtt_RandomEffect);
-    Serial.print("  Effect Speed     : ");
+    //Effect Speed
+    Serial.print("  Effect Speed       : ");
     Serial.println(mqtt_EffectSpeed);
-    Serial.print("  Fade Speed       : ");
+    //Fade Speed
+    Serial.print("  Fade Speed         : ");
     Serial.println(mqtt_FadeSpeed);
-    Serial.print("  Effect Number    : ");
+    //Effect Number
+    Serial.print("  Effect Number      : ");
     Serial.println(mqtt_EffectNumber);
-    Serial.print("  Effect Direction : ");
+    //Effect Direction
+    Serial.print("  Effect Direction   : ");
     Serial.println(mqtt_EffectDirection);
     Serial.println("/---------------------------------/");
     //Reset
@@ -56,6 +108,24 @@ void printer() {
     mem_mqtt_RandomColor      = mqtt_RandomColor;
     mem_mqtt_RainbowColor     = mqtt_RainbowColor;
     mem_mqtt_RandomColorSync  = mqtt_RandomColorSync;
+    mem_mqtt_FilterColorMulti = mqtt_FilterColorMulti;
+
+    mem_mqtt_Filter1Red       = mqtt_Filter1Red;
+    mem_mqtt_Filter1Green     = mqtt_Filter1Green;
+    mem_mqtt_Filter1Blue      = mqtt_Filter1Blue;
+
+    mem_mqtt_Filter2Red       = mqtt_Filter2Red;
+    mem_mqtt_Filter2Green     = mqtt_Filter2Green;
+    mem_mqtt_Filter2Blue      = mqtt_Filter2Blue;
+
+    mem_mqtt_Filter3Red       = mqtt_Filter3Red;
+    mem_mqtt_Filter3Green     = mqtt_Filter3Green;
+    mem_mqtt_Filter3Blue      = mqtt_Filter3Blue;
+
+    mem_mqtt_Filter4Red       = mqtt_Filter4Red;
+    mem_mqtt_Filter4Green     = mqtt_Filter4Green;
+    mem_mqtt_Filter4Blue      = mqtt_Filter4Blue;
+
     mem_mqtt_Red              = mqtt_Red;
     mem_mqtt_Green            = mqtt_Green;
     mem_mqtt_Blue             = mqtt_Blue;
@@ -110,6 +180,60 @@ void printer() {
       case 2 : Serial.println("Rainbow");
         break;
       case 3 : Serial.println("Random Sync");
+        break;
+      case 4 : Serial.println("Filter Multi");
+        //Filter 1
+        if (Filter1Active) {
+          Serial.print("      Filter 1     : ");
+          Serial.print(Filter1Red);
+          Serial.print(",");
+          Serial.print(Filter1Green);
+          Serial.print(",");
+          Serial.print(Filter1Blue);
+          Serial.println("");
+        } else {
+          Serial.print("      Filter 1     : ");
+          Serial.println("OFF");
+        }
+        //Filter 2
+        if (Filter2Active) {
+          Serial.print("      Filter 2     : ");
+          Serial.print(Filter2Red);
+          Serial.print(",");
+          Serial.print(Filter2Green);
+          Serial.print(",");
+          Serial.print(Filter2Blue);
+          Serial.println("");
+        } else {
+          Serial.print("      Filter 2     : ");
+          Serial.println("OFF");
+        }
+        //Filter 3
+        if (Filter3Active) {
+          Serial.print("      Filter 3     : ");
+          Serial.print(Filter3Red);
+          Serial.print(",");
+          Serial.print(Filter3Green);
+          Serial.print(",");
+          Serial.print(Filter3Blue);
+          Serial.println("");
+        } else {
+          Serial.print("      Filter 3     : ");
+          Serial.println("OFF");
+        }
+        //Filter 4
+        if (Filter4Active) {
+          Serial.print("      Filter 4     : ");
+          Serial.print(Filter4Red);
+          Serial.print(",");
+          Serial.print(Filter4Green);
+          Serial.print(",");
+          Serial.print(Filter4Blue);
+          Serial.println("");
+        } else {
+          Serial.print("      Filter 4     : ");
+          Serial.println("OFF");
+        }
         break;
     }
     Serial.println("/---------------------------------/");
@@ -171,8 +295,6 @@ void printer() {
         break;
       case 22: Serial.println("Flash");
         break;
-
-
 
       default: Serial.println("General Error Effect");
         break;
