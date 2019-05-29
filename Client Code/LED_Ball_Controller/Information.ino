@@ -169,7 +169,7 @@ void printer() {
 
 #ifdef DEBUG_COLOR
   //Prints the state of the Color Control
-  if (mem_ColorControl != ColorControl) {
+  if ((mem_ColorControl != ColorControl) or (LightDataChange && ColorControl == 4)) {
     Serial.println("/--------------Color--------------/");
     Serial.print("  Color Picker     : ");
     switch (ColorControl) {
@@ -239,6 +239,7 @@ void printer() {
     Serial.println("/---------------------------------/");
   }
   //Reset
+  LightDataChange = false;
   mem_ColorControl = ColorControl;
 #endif
 

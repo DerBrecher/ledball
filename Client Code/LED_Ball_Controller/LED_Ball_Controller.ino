@@ -14,15 +14,15 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "28.05.2019"
-#define Version     "1.1.11"
+#define LastModifed "29.05.2019"
+#define Version     "1.1.12"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   28.05.2019
-  Version       :   1.1.11
+  Last Modifed  :   29.05.2019
+  Version       :   1.1.12
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
@@ -64,6 +64,9 @@
                       Added new Color Picker "Filter Color Multi". Supports Normal Fade to Color and Color Sync. Added saving the Settings of the Ball to the EEPROM of the ESP and loading it on the startup
                     Version 1.1.11
                       Finished implementation of MQTT Paths etc for "Filter Color Multi"
+                    Version 1.1.12
+                      Finished implementation of Filter Color Multi. Fixed bug that FadeSpeed cant be 255.
+
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
                     2. black()                => Makes all LEDs black (no brightness change)
@@ -83,7 +86,7 @@
 
 //Developer mode skips some initializations and blocks startup effects for shorter Startup time.
 boolean DevMode = true;
-boolean DevFilter = true;
+boolean DevFilter = false;
 
 //--- LED Ball Parameters ---//
 #define NUM_LEDS 400                      //Number of LEDs from the Ball
@@ -140,6 +143,8 @@ boolean Filter1Active = false;
 boolean Filter2Active = false;
 boolean Filter3Active = false;
 boolean Filter4Active = false;
+int IndexColorPickerFilter = 0;
+boolean ColorFilterColorFinished = false;
 
 //Color Control State
 int ColorControl = 0;
@@ -150,7 +155,7 @@ int ColorControl = 0;
 #define DEBUG_LIGHT_STATE   //Prints Light State
 #define DEBUG_COLOR         //Prints the Color Control mode
 #define DEBUG_EFFECTS       //Prints the used Effect
-#define DEBUG_NETWORK       //Prints MQTT Parameter
+//#define DEBUG_NETWORK       //Prints MQTT Parameter
 
 //LED Ball Control Parameter
 //Truns the Ball ON / OFF
@@ -197,6 +202,7 @@ unsigned long PrevMillis_NormalColor          = 0;
 unsigned long PrevMillis_RandomColor          = 0;
 unsigned long PrevMillis_RainbowColor         = 0;
 unsigned long PrevMillis_RandomColorSync      = 0;
+unsigned long PrevMillis_ColorFilter          = 0;
 //----Brightness----//
 unsigned long PrevMillis_FadeBrightness       = 0;
 //----Effects----//
@@ -215,6 +221,7 @@ unsigned long TimeOut_NormalColor             = 30;     // 0.03 Seconds
 unsigned long TimeOut_RandomColor             = 4000;   // 4.00 Seconds
 unsigned long TimeOut_RainbowColor            = 30;     // 0.03 Seconds
 unsigned long TimeOut_RandomColorSync         = 30;     // 0.03 Seconds
+unsigned long TimeOut_ColorFilter             = 5000;   // 5.00 Seconds
 //----Brightness----//
 unsigned long TimeOut_FadeBrightness          = 10;     // 0.01 Seconds
 //----Effects----//
@@ -422,6 +429,7 @@ int mem_MainState;
 
 //Memory form the Light State
 int mem_LightState;
+boolean LightDataChange;
 
 //memory from the Color Control
 int mem_ColorControl;
@@ -1034,8 +1042,89 @@ void ColorPickerRandomSync(boolean EffectFinsihed) {
 
 //--------------------------- Random Color Sync ---------------------------//
 void ColorPickerFilterColorMulti(boolean EffectFinsihed) {
+  unsigned long CurMillis_ColorFilter = millis();
+  switch (IndexColorPickerFilter) {
 
+    //Filter 1
+    case 0:
+      if (Filter1Active) {
+        if (not ColorFilterColorFinished) {
+          Red = Filter1Red;
+          Green = Filter1Green;
+          Blue = Filter1Blue;
+          ColorFilterColorFinished = FadeColor();
+        } else {
+          if (CurMillis_ColorFilter - PrevMillis_ColorFilter >= TimeOut_ColorFilter) {
+            PrevMillis_ColorFilter = CurMillis_ColorFilter;
+            IndexColorPickerFilter = 1;
+            ColorFilterColorFinished = false;
+          }
+        }
+      } else {
+        IndexColorPickerFilter = 1;
+      }
+      break;
 
+    //Filter 2
+    case 1:
+      if (Filter2Active) {
+        if (not ColorFilterColorFinished) {
+          Red = Filter2Red;
+          Green = Filter2Green;
+          Blue = Filter2Blue;
+          ColorFilterColorFinished = FadeColor();
+        } else {
+          if (CurMillis_ColorFilter - PrevMillis_ColorFilter >= TimeOut_ColorFilter) {
+            PrevMillis_ColorFilter = CurMillis_ColorFilter;
+            IndexColorPickerFilter = 2;
+            ColorFilterColorFinished = false;
+          }
+        }
+      } else {
+        IndexColorPickerFilter = 2;
+      }
+      break;
+
+    //Filter 3
+    case 2:
+      if (Filter3Active) {
+        if (not ColorFilterColorFinished) {
+          Red = Filter3Red;
+          Green = Filter3Green;
+          Blue = Filter3Blue;
+          ColorFilterColorFinished = FadeColor();
+        } else {
+          if (CurMillis_ColorFilter - PrevMillis_ColorFilter >= TimeOut_ColorFilter) {
+            PrevMillis_ColorFilter = CurMillis_ColorFilter;
+            IndexColorPickerFilter = 3;
+            ColorFilterColorFinished = false;
+          }
+        }
+      } else {
+        IndexColorPickerFilter = 3;
+      }
+      break;
+
+    //Filter 4
+    case 3:
+      if (Filter4Active) {
+        if (not ColorFilterColorFinished) {
+          Red = Filter4Red;
+          Green = Filter4Green;
+          Blue = Filter4Blue;
+          ColorFilterColorFinished = FadeColor();
+        } else {
+          if (CurMillis_ColorFilter - PrevMillis_ColorFilter >= TimeOut_ColorFilter) {
+            PrevMillis_ColorFilter = CurMillis_ColorFilter;
+            IndexColorPickerFilter = 0;
+            ColorFilterColorFinished = false;
+          }
+        }
+      } else {
+        IndexColorPickerFilter = 0;
+      }
+      break;
+  }
 }
 
 //--------------------------- Reset Color Picker to Normal ---------------------------//
@@ -1057,15 +1146,18 @@ void ColorPickerRandomSyncOnlySupported() {
     mqtt_Client.publish(mqtt_command_RandomColorSync, "1"); //Turn on Random Color Sync
     mqtt_Client.publish(mqtt_command_RandomColor, "0"); //Turn of Random Color
     mqtt_Client.publish(mqtt_command_RainbowColor, "0"); //Turn of Rainbow
+    mqtt_Client.publish(mqtt_command_FilterColorMulti, "0"); //Turn of Filter Color
     SendOnlySupported = false;
   }
   //Reset Light Control switch
-  RandomColorSync = true;
-  RandomColor     = false;
-  RainbowColor    = false;
-  mqtt_RandomColorSync = true;
-  mqtt_RandomColor     = false;
-  mqtt_RainbowColor    = false;
+  RandomColorSync  = true;
+  RandomColor      = false;
+  RainbowColor     = false;
+  FilterColorMulti = false;
+  mqtt_RandomColorSync  = true;
+  mqtt_RandomColor      = false;
+  mqtt_RainbowColor     = false;
+  mqtt_FilterColorMulti = false;
 }
 
 

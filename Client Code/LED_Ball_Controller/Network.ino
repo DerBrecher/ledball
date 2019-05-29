@@ -206,15 +206,14 @@ void callback(char* topic, byte * payload, unsigned int length) {
       char* green = strtok(NULL, ",");
       char* blue  = strtok(NULL, ",");
 
+      //Check if Data has changed from Last time (for information print)
+      if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
+        LightDataChange = true;
+      }
+
       mqtt_Filter1Red    = Check8BitBoundaries(atoi(red));
       mqtt_Filter1Green  = Check8BitBoundaries(atoi(green));
       mqtt_Filter1Blue   = Check8BitBoundaries(atoi(blue));
-
-      if (mqtt_Filter1Red == 0 && mqtt_Filter1Green == 0 && mqtt_Filter1Blue == 0) {
-        Filter1Active = false;
-      } else {
-        Filter1Active = true;
-      }
 
       mqtt_Client.publish(mqtt_command_Filter1_Color, message);
     }
@@ -225,15 +224,14 @@ void callback(char* topic, byte * payload, unsigned int length) {
       char* green = strtok(NULL, ",");
       char* blue  = strtok(NULL, ",");
 
+      //Check if Data has changed from Last time (for information print)
+      if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
+        LightDataChange = true;
+      }
+
       mqtt_Filter2Red    = Check8BitBoundaries(atoi(red));
       mqtt_Filter2Green  = Check8BitBoundaries(atoi(green));
       mqtt_Filter2Blue   = Check8BitBoundaries(atoi(blue));
-
-      if (mqtt_Filter2Red == 0 && mqtt_Filter2Green == 0 && mqtt_Filter2Blue == 0) {
-        Filter2Active = false;
-      } else {
-        Filter2Active = true;
-      }
 
       mqtt_Client.publish(mqtt_command_Filter2_Color, message);
     }
@@ -244,34 +242,33 @@ void callback(char* topic, byte * payload, unsigned int length) {
       char* green = strtok(NULL, ",");
       char* blue  = strtok(NULL, ",");
 
+      //Check if Data has changed from Last time (for information print)
+      if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
+        LightDataChange = true;
+      }
+
       mqtt_Filter3Red    = Check8BitBoundaries(atoi(red));
       mqtt_Filter3Green  = Check8BitBoundaries(atoi(green));
       mqtt_Filter3Blue   = Check8BitBoundaries(atoi(blue));
-
-      if (mqtt_Filter3Red == 0 && mqtt_Filter3Green == 0 && mqtt_Filter3Blue == 0) {
-        Filter3Active = false;
-      } else {
-        Filter3Active = true;
-      }
 
       mqtt_Client.publish(mqtt_command_Filter3_Color, message);
     }
 
     //------------------- Parameter [mqtt_Filter4Red, mqtt_Filter4Green, mqtt_Filter4Blue] -------------------//
     if (String(mqtt_state_Filter4_Color).equals(topic)) {
+
       char* red   = strtok(message, ",");
       char* green = strtok(NULL, ",");
       char* blue  = strtok(NULL, ",");
 
+      //Check if Data has changed from Last time (for information print)
+      if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
+        LightDataChange = true;
+      }
+
       mqtt_Filter4Red    = Check8BitBoundaries(atoi(red));
       mqtt_Filter4Green  = Check8BitBoundaries(atoi(green));
       mqtt_Filter4Blue   = Check8BitBoundaries(atoi(blue));
-
-      if (mqtt_Filter4Red == 0 && mqtt_Filter4Green == 0 && mqtt_Filter4Blue == 0) {
-        Filter4Active = false;
-      } else {
-        Filter4Active = true;
-      }
 
       mqtt_Client.publish(mqtt_command_Filter4_Color, message);
     }
@@ -329,6 +326,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
     //------------------- Parameter [mqtt_FadeSpeed] -------------------//
     if (String(mqtt_state_FadeSpeed).equals(topic)) {
       mqtt_FadeSpeed = Check8BitBoundaries(atoi(message));
+      //Fade Speed cant be 255 or the Fade will crash
+      if(mqtt_FadeSpeed == 255){
+        mqtt_FadeSpeed - 1;
+      }
       mqtt_Client.publish(mqtt_command_FadeSpeed, message);
     }
 
@@ -370,6 +371,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Filter On / OFF Not used -------------------//
   if (String(mqtt_state_Filter1).equals(topic)) {
+    LightDataChange = true;
     if (strcmp(message, "ON") == 0) {
       mqtt_Client.publish(mqtt_command_Filter1, "ON");
       Filter1Active = true;
@@ -382,6 +384,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Filter On / OFF Not used -------------------//
   if (String(mqtt_state_Filter2).equals(topic)) {
+    LightDataChange = true;
     if (strcmp(message, "ON") == 0) {
       mqtt_Client.publish(mqtt_command_Filter2, "ON");
       Filter2Active = true;
@@ -394,6 +397,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Filter On / OFF Not used -------------------//
   if (String(mqtt_state_Filter3).equals(topic)) {
+    LightDataChange = true;
     if (strcmp(message, "ON") == 0) {
       mqtt_Client.publish(mqtt_command_Filter3, "ON");
       Filter3Active = true;
@@ -406,6 +410,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Filter On / OFF Not used -------------------//
   if (String(mqtt_state_Filter4).equals(topic)) {
+    LightDataChange = true;
     if (strcmp(message, "ON") == 0) {
       mqtt_Client.publish(mqtt_command_Filter4, "ON");
       Filter4Active = true;
