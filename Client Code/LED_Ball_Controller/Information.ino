@@ -32,7 +32,8 @@ void printer() {
         mem_mqtt_EffectSpeed      != mqtt_EffectSpeed or
         mem_mqtt_FadeSpeed        != mqtt_FadeSpeed or
         mem_mqtt_EffectNumber     != mqtt_EffectNumber or
-        mem_mqtt_EffectDirection  != mqtt_EffectDirection)) {
+        mem_mqtt_EffectDirection  != mqtt_EffectDirection or
+        mem_mqtt_RandomEffectPower!= mqtt_RandomEffectPower)) {
     Serial.println("/--------Network Parameter--------/");
     //Power
     Serial.print("  Power              : ");
@@ -87,6 +88,8 @@ void printer() {
     //Random Effect
     Serial.print("  Random Effect      : ");
     Serial.println(mqtt_RandomEffect);
+    Serial.print("  Random Effect Power: ");
+    Serial.println(mqtt_RandomEffectPower);
     //Effect Speed
     Serial.print("  Effect Speed       : ");
     Serial.println(mqtt_EffectSpeed);
@@ -137,6 +140,7 @@ void printer() {
     mem_mqtt_FadeSpeed        = mqtt_FadeSpeed;
     mem_mqtt_EffectNumber     = mqtt_EffectNumber;
     mem_mqtt_EffectDirection  = mqtt_EffectDirection;
+    mem_mqtt_RandomEffectPower = mqtt_RandomEffectPower;
   }
 #endif
 

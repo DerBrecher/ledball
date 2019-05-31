@@ -108,6 +108,269 @@ void FadeBrightness() {
 }
 
 void RandomEffectPicker() {
+  //Randomly Picks Effects. Got 3 Steps: 0. Slow 1. Middle 2.Fast 3. Super Fast
+  unsigned long CurMillis_RandomEffectPicker = millis();
+
+  //For RandomEffecPicker is the Direction Up or Down
+  mqtt_EffectDirection = 8;
+
+  switch (RandomEffectPower) {
+
+    case 0: //Slow
+      if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 60000) {  //60 Sec
+        PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
+        //Random Effect
+        RandomEffectNumber = int(random(1, 8));
+        /* Not sure if usable because speed of the Effect depends on the direction
+          //Random Dirrection
+          int TempRandom = int(random(0, 3));
+          switch (TempRandom) {
+          case 0: mqtt_EffectDirection = 8;
+            break;
+          case 1: mqtt_EffectDirection = 6;
+            break;
+          case 2: mqtt_EffectDirection = 2;
+            break;
+          case 3: mqtt_EffectDirection = 4;
+            break;
+          }
+        */
+      }
+      break;
+
+    case 1: //Middle
+      if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 40000) {  //40 Sec
+        PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
+        RandomEffectNumber = int(random(0, 8));
+      }
+      break;
+
+    case 2: //Fast
+      if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 20000) {  //20 Sec
+        PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
+        RandomEffectNumber = int(random(0, 8));
+      }
+      break;
+
+    case 3: //Super Fast
+      if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 10000) {  //10 Sec
+        PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
+        RandomEffectNumber = int(random(1, 8));
+      }
+      break;
+
+  }
+
+  //Current Random Effect
+  switch (RandomEffectNumber) { //Effect List
+
+    case 0: //Rotor
+      //Settings for Effect syned with Effect Power
+      switch (RandomEffectPower) {
+        case 0: //Slow
+          mqtt_EffectSpeed = 100;
+          mqtt_FadeSpeed = 170;
+          break;
+        case 1: //Middle
+          mqtt_EffectSpeed = 90;
+          mqtt_FadeSpeed = 170;
+          break;
+        case 2: //Fast
+          mqtt_EffectSpeed = 80;
+          mqtt_FadeSpeed = 180;
+          break;
+        case 3: //Super Fast
+          mqtt_EffectSpeed = 70;
+          mqtt_FadeSpeed = 180;
+          break;
+      }
+      Rotor();
+
+    case 1: //Matrix
+      //Settings for Effect syned with Effect Power
+      switch (RandomEffectPower) {
+        case 0: //Slow
+          mqtt_EffectSpeed = 75;
+          mqtt_FadeSpeed = 205;
+          break;
+        case 1: //Middle
+          mqtt_EffectSpeed = 60;
+          mqtt_FadeSpeed = 195;
+          break;
+        case 2: //Fast
+          mqtt_EffectSpeed = 45;
+          mqtt_FadeSpeed = 180;
+          break;
+        case 3: //Super Fast
+          mqtt_EffectSpeed = 30;
+          mqtt_FadeSpeed = 165;
+          break;
+      }
+      Matrix();
+      break;
+
+    case 2: //DoubleBounce
+      //Settings for Effect syned with Effect Power
+      switch (RandomEffectPower) {
+        case 0: //Slow
+          mqtt_EffectSpeed = 65;
+          mqtt_FadeSpeed = 205;
+          break;
+        case 1: //Middle
+          mqtt_EffectSpeed = 55;
+          mqtt_FadeSpeed = 200;
+          break;
+        case 2: //Fast
+          mqtt_EffectSpeed = 40;
+          mqtt_FadeSpeed = 170;
+          break;
+        case 3: //Super Fast
+          mqtt_EffectSpeed = 30;
+          mqtt_FadeSpeed = 145;
+          break;
+      }
+      DoubleBounce();
+      break;
+
+    case 3: //SingleBounce
+      //Settings for Effect syned with Effect Power
+      switch (RandomEffectPower) {
+        case 0: //Slow
+          mqtt_EffectSpeed = 65;
+          mqtt_FadeSpeed = 205;
+          break;
+        case 1: //Middle
+          mqtt_EffectSpeed = 55;
+          mqtt_FadeSpeed = 200;
+          break;
+        case 2: //Fast
+          mqtt_EffectSpeed = 40;
+          mqtt_FadeSpeed = 170;
+          break;
+        case 3: //Super Fast
+          mqtt_EffectSpeed = 30;
+          mqtt_FadeSpeed = 145;
+          break;
+      }
+      SingleBounce();
+      break;
+
+    case 4: //DiscoField
+      //Settings for Effect syned with Effect Power
+      switch (RandomEffectPower) {
+        case 0: //Slow
+          mqtt_EffectSpeed = 85;
+          mqtt_FadeSpeed = 230;
+          break;
+        case 1: //Middle
+          mqtt_EffectSpeed = 75;
+          mqtt_FadeSpeed = 215;
+          break;
+        case 2: //Fast
+          mqtt_EffectSpeed = 65;
+          mqtt_FadeSpeed = 210;
+          break;
+        case 3: //Super Fast
+          mqtt_EffectSpeed = 50;
+          mqtt_FadeSpeed = 210;
+          break;
+      }
+      DiscoField();
+      break;
+
+    case 5: //DiscoBall
+      //Settings for Effect syned with Effect Power
+      switch (RandomEffectPower) {
+        case 0: //Slow
+          mqtt_EffectSpeed = 90;
+          mqtt_FadeSpeed = 230;
+          break;
+        case 1: //Middle
+          mqtt_EffectSpeed = 80;
+          mqtt_FadeSpeed = 220;
+          break;
+        case 2: //Fast
+          mqtt_EffectSpeed = 70;
+          mqtt_FadeSpeed = 205;
+          break;
+        case 3: //Super Fast
+          mqtt_EffectSpeed = 50;
+          mqtt_FadeSpeed = 205;
+          break;
+      }
+      DiscoBall();
+      break;
+
+    case 6: //RingRun
+      //Settings for Effect syned with Effect Power
+      switch (RandomEffectPower) {
+        case 0: //Slow
+          mqtt_EffectSpeed = 85;
+          mqtt_FadeSpeed = 225;
+          break;
+        case 1: //Middle
+          mqtt_EffectSpeed = 75;
+          mqtt_FadeSpeed = 215;
+          break;
+        case 2: //Fast
+          mqtt_EffectSpeed = 60;
+          mqtt_FadeSpeed = 200;
+          break;
+        case 3: //Super Fast
+          mqtt_EffectSpeed = 50;
+          mqtt_FadeSpeed = 200;
+          break;
+      }
+      RingRun();
+      break;
+
+    case 7: //RainDrop
+      //Settings for Effect syned with Effect Power
+      switch (RandomEffectPower) {
+        case 0: //Slow
+          mqtt_EffectSpeed = 70;
+          mqtt_FadeSpeed = 170;
+          break;
+        case 1: //Middle
+          mqtt_EffectSpeed = 60;
+          mqtt_FadeSpeed = 170;
+          break;
+        case 2: //Fast
+          mqtt_EffectSpeed = 50;
+          mqtt_FadeSpeed = 180;
+          break;
+        case 3: //Super Fast
+          mqtt_EffectSpeed = 30;
+          mqtt_FadeSpeed = 180;
+          break;
+      }
+      RainDrop();
+      break;
+
+    case 8: //Equalizer
+      //Settings for Effect syned with Effect Power
+      switch (RandomEffectPower) {
+        case 0: //Slow
+          mqtt_EffectSpeed = 70;
+          mqtt_FadeSpeed = 170;
+          break;
+        case 1: //Middle
+          mqtt_EffectSpeed = 60;
+          mqtt_FadeSpeed = 170;
+          break;
+        case 2: //Fast
+          mqtt_EffectSpeed = 50;
+          mqtt_FadeSpeed = 180;
+          break;
+        case 3: //Super Fast
+          mqtt_EffectSpeed = 30;
+          mqtt_FadeSpeed = 180;
+          break;
+      }
+      Equalizer();
+      break;
+
+  }
 
 }
 

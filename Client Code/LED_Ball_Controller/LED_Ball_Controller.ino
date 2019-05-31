@@ -14,21 +14,24 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "29.05.2019"
-#define Version     "1.1.12"
+#define LastModifed "31.05.2019"
+#define Version     "1.1.13"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   29.05.2019
-  Version       :   1.1.12
+  Last Modifed  :   31.05.2019
+  Version       :   1.1.13
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
                     - When the direction is used, the speed of the effects must be adjusted according to the direction. Effect speeds are time based and not pixel lenght based
                     - When gamma8 correction is used fix fade to new color with gamma8 correction
                     - Delete Init MQTT Paramter. Gets read from the EEPROM
+                    - Check if EEPROM Save works and add mqtt_RandomEffectPower etc...
+                    - Fix Rotor Effect Stutter after finish of rotation
+                    - Check Error with Double Bounce and Main State random Value of 846458
 
   Bugs          :   - Color Picker goes to white after time.
 
@@ -66,6 +69,8 @@
                       Finished implementation of MQTT Paths etc for "Filter Color Multi"
                     Version 1.1.12
                       Finished implementation of Filter Color Multi. Fixed bug that FadeSpeed cant be 255.
+                    Version 1.1.13
+                      Added RandomEffectPicker. Fixed some Bugs.
 
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
@@ -191,6 +196,7 @@ byte EffectSpeed;      //0 - 100
 byte FadeSpeed;        //0 - 255
 byte EffectNumber;     //0 - 255
 byte EffectDirection;  // 8 == Up // 6 == Right // 2 == Down // 4 == Left
+int RandomEffectPower;
 
 //Secret Control for the Random Effect
 boolean AllowFade = false;   //On / Off
@@ -213,6 +219,8 @@ unsigned long PrevMillis_EffectStartupReady   = 0;
 unsigned long PrevMillis_NoWiFiConnection     = 0;
 //----HeartBeat----//
 unsigned long PrevMillis_HeartBeat            = 0;
+//----RandomEffectPicker----//
+unsigned long PrevMillis_RandomEffectPicker   = 0;
 
 
 unsigned long TimeOut_Example                 = 1000;   // 1.00 Seconds
@@ -231,7 +239,8 @@ unsigned long TimeOut_EffectStartupReady      = 30;     // 0.03 Seconds
 unsigned long TimeOut_NoWiFiConnection        = 50;     // 0.03 Seconds
 //----HeartBeat----//
 unsigned long TimeOut_HeartBeat               = 5000;   // 5.00 Seconds
-
+//----RandomEffectPicker----//
+unsigned long TimeOut_RandomEffectPicker      = 0;      // 0.00 Seconds //Not Used gets set in RandomEffectPicker
 
 //Speical for Show
 unsigned long PrevMillis_FPS  = 0;  //Timeout is Controlled by FPS/1000
@@ -247,6 +256,9 @@ unsigned long PrevMillis_FPS  = 0;  //Timeout is Controlled by FPS/1000
 //*************************************************************************************************//
 //-------------------------------------------- EFFECTS --------------------------------------------//
 //*************************************************************************************************//
+
+//RandomEffectPicker
+int RandomEffectNumber;
 
 //--- Fade ---//
 //Actual Brightness of the LEDs
@@ -423,6 +435,7 @@ uint8_t mem_mqtt_EffectSpeed;
 uint8_t mem_mqtt_FadeSpeed;
 uint8_t mem_mqtt_EffectNumber;
 uint8_t mem_mqtt_EffectDirection;
+uint8_t mem_mqtt_RandomEffectPower;
 
 //Memory form the Main State
 int mem_MainState;
@@ -477,6 +490,7 @@ byte    mqtt_EffectSpeed;
 byte    mqtt_FadeSpeed;
 byte    mqtt_EffectNumber;
 byte    mqtt_EffectDirection;
+int     mqtt_RandomEffectPower;
 
 
 //WiFi
@@ -1190,6 +1204,7 @@ void syncParameter() {
   FadeSpeed         = mqtt_FadeSpeed;
   EffectNumber      = mqtt_EffectNumber;
   EffectDirection   = mqtt_EffectDirection;
+  RandomEffectPower = mqtt_RandomEffectPower;
 }
 
 //--------------------------- Init MQTT Parameter ---------------------------//
@@ -1221,6 +1236,7 @@ void InitMqttParameter() {
   mqtt_FadeSpeed        = 10;
   mqtt_EffectNumber     = 0;
   mqtt_EffectDirection  = 8;
+  mqtt_RandomEffectPower = 0;
 
   //Dev Mode for Filter
   if (DevFilter) {

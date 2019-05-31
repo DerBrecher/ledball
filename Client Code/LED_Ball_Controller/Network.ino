@@ -60,6 +60,7 @@ void mqtt() {
       mqtt_Client.subscribe( mqtt_state_FadeSpeed);
       mqtt_Client.subscribe( mqtt_state_EffectNumber);
       mqtt_Client.subscribe( mqtt_state_EffectDirection);
+      mqtt_Client.subscribe( mqtt_state_RandomEffectPower);
       //---- Not Used Parameter ----//
       mqtt_Client.subscribe( mqtt_state_Filter1);
       mqtt_Client.subscribe( mqtt_state_Filter2);
@@ -317,6 +318,12 @@ void callback(char* topic, byte * payload, unsigned int length) {
       mqtt_Client.publish(mqtt_command_RandomEffect, message);
     }
 
+    //------------------- Parameter [mqtt_RandomEffectPower] -------------------//
+    if (String(mqtt_state_RandomEffectPower).equals(topic)) {
+      mqtt_RandomEffectPower = Check8BitBoundaries(atoi(message));
+      mqtt_Client.publish(mqtt_command_RandomEffectPower, message);
+    }
+
     //------------------- Parameter [mqtt_EffectSpeed] -------------------//
     if (String(mqtt_state_EffectSpeed).equals(topic)) {
       mqtt_EffectSpeed = Check8BitBoundaries(atoi(message));
@@ -327,7 +334,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
     if (String(mqtt_state_FadeSpeed).equals(topic)) {
       mqtt_FadeSpeed = Check8BitBoundaries(atoi(message));
       //Fade Speed cant be 255 or the Fade will crash
-      if(mqtt_FadeSpeed == 255){
+      if (mqtt_FadeSpeed == 255) {
         mqtt_FadeSpeed - 1;
       }
       mqtt_Client.publish(mqtt_command_FadeSpeed, message);
@@ -424,6 +431,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
 //------------------------------- MQTT MessageToEffectNumber --------------------------------//
 uint8_t MessageToEffectNumber(char* message) {
+  //Deactivate RandomEffect if Manuel Effect is selected
+  mqtt_RandomEffect = false;
+  mqtt_Client.publish(mqtt_command_RandomEffect, "OFF");
+
   //Converts Name of the Effect to the EffectNumber
   if (strcmp(message, "black") == 0) {
     return 0;
