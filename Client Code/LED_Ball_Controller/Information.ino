@@ -33,7 +33,7 @@ void printer() {
         mem_mqtt_FadeSpeed        != mqtt_FadeSpeed or
         mem_mqtt_EffectNumber     != mqtt_EffectNumber or
         mem_mqtt_EffectDirection  != mqtt_EffectDirection or
-        mem_mqtt_RandomEffectPower!= mqtt_RandomEffectPower)) {
+        mem_mqtt_RandomEffectPower != mqtt_RandomEffectPower)) {
     Serial.println("/--------Network Parameter--------/");
     //Power
     Serial.print("  Power              : ");
@@ -272,33 +272,17 @@ void printer() {
         break;
       case 8 : Serial.println("Single Bounce");
         break;
-      case 9: Serial.println("Double Bounce");
+      case 9 : Serial.println("Double Bounce");
         break;
-      case 10: Serial.println("Full Flash");
+      case 10: Serial.println("Half Flash");
         break;
-      case 11: Serial.println("Half Flash");
+      case 11: Serial.println("QuarterFlash");
         break;
-      case 12: Serial.println("QuarterFlash");
+      case 12: Serial.println("EighthFlash");
         break;
-      case 13: Serial.println("EighthFlash");
+      case 13: Serial.println("Matrix");
         break;
-      case 14: Serial.println("Circus");
-        break;
-      case 15: Serial.println("Matrix");
-        break;
-      case 16: Serial.println("LoopSnake");
-        break;
-      case 17: Serial.println("HappyBirthday");
-        break;
-      case 18: Serial.println("HappyNewYear");
-        break;
-      case 19: Serial.println("SpiralSnake");
-        break;
-      case 20: Serial.println("WaveRefresh");
-        break;
-      case 21: Serial.println("Rotor");
-        break;
-      case 22: Serial.println("Flash");
+      case 14: Serial.println("WaveRefresh");
         break;
 
       default: Serial.println("General Error Effect");

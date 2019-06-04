@@ -111,9 +111,6 @@ void RandomEffectPicker() {
   //Randomly Picks Effects. Got 3 Steps: 0. Slow 1. Middle 2.Fast 3. Super Fast
   unsigned long CurMillis_RandomEffectPicker = millis();
 
-  //For RandomEffecPicker is the Direction Up or Down
-  mqtt_EffectDirection = 8;
-
   switch (RandomEffectPower) {
 
     case 0: //Slow
@@ -121,34 +118,56 @@ void RandomEffectPicker() {
         PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
         //Random Effect
         RandomEffectNumber = int(random(1, 8));
-        /* Not sure if usable because speed of the Effect depends on the direction
-          //Random Dirrection
-          int TempRandom = int(random(0, 3));
-          switch (TempRandom) {
-          case 0: mqtt_EffectDirection = 8;
+        //Random Effect Direction
+        int temp = int(random(0, 3));
+        switch (temp) {
+          case 0: RandomEffectDirection = 8;
             break;
-          case 1: mqtt_EffectDirection = 6;
+          case 1: RandomEffectDirection = 6;
             break;
-          case 2: mqtt_EffectDirection = 2;
+          case 2: RandomEffectDirection = 2;
             break;
-          case 3: mqtt_EffectDirection = 4;
+          case 3: RandomEffectDirection = 4;
             break;
-          }
-        */
+        }
       }
       break;
 
     case 1: //Middle
       if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 40000) {  //40 Sec
         PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
-        RandomEffectNumber = int(random(0, 8));
+        RandomEffectNumber = int(random(1, 8));
+        //Random Effect Direction
+        int temp = int(random(0, 3));
+        switch (temp) {
+          case 0: RandomEffectDirection = 8;
+            break;
+          case 1: RandomEffectDirection = 6;
+            break;
+          case 2: RandomEffectDirection = 2;
+            break;
+          case 3: RandomEffectDirection = 4;
+            break;
+        }
       }
       break;
 
     case 2: //Fast
       if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 20000) {  //20 Sec
         PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
-        RandomEffectNumber = int(random(0, 8));
+        RandomEffectNumber = int(random(1, 8));
+        //Random Effect Direction
+        int temp = int(random(0, 3));
+        switch (temp) {
+          case 0: RandomEffectDirection = 8;
+            break;
+          case 1: RandomEffectDirection = 6;
+            break;
+          case 2: RandomEffectDirection = 2;
+            break;
+          case 3: RandomEffectDirection = 4;
+            break;
+        }
       }
       break;
 
@@ -156,6 +175,18 @@ void RandomEffectPicker() {
       if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 10000) {  //10 Sec
         PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
         RandomEffectNumber = int(random(1, 8));
+        //Random Effect Direction
+        int temp = int(random(0, 3));
+        switch (temp) {
+          case 0: RandomEffectDirection = 8;
+            break;
+          case 1: RandomEffectDirection = 6;
+            break;
+          case 2: RandomEffectDirection = 2;
+            break;
+          case 3: RandomEffectDirection = 4;
+            break;
+        }
       }
       break;
 
@@ -164,29 +195,9 @@ void RandomEffectPicker() {
   //Current Random Effect
   switch (RandomEffectNumber) { //Effect List
 
-    case 0: //Rotor
-      //Settings for Effect syned with Effect Power
-      switch (RandomEffectPower) {
-        case 0: //Slow
-          mqtt_EffectSpeed = 100;
-          mqtt_FadeSpeed = 170;
-          break;
-        case 1: //Middle
-          mqtt_EffectSpeed = 90;
-          mqtt_FadeSpeed = 170;
-          break;
-        case 2: //Fast
-          mqtt_EffectSpeed = 80;
-          mqtt_FadeSpeed = 180;
-          break;
-        case 3: //Super Fast
-          mqtt_EffectSpeed = 70;
-          mqtt_FadeSpeed = 180;
-          break;
-      }
-      Rotor();
-
     case 1: //Matrix
+      //Effect Direction not used
+      mqtt_EffectDirection = 8;
       //Settings for Effect syned with Effect Power
       switch (RandomEffectPower) {
         case 0: //Slow
@@ -210,6 +221,8 @@ void RandomEffectPicker() {
       break;
 
     case 2: //DoubleBounce
+      //Effect Direction not used
+      mqtt_EffectDirection = 8;
       //Settings for Effect syned with Effect Power
       switch (RandomEffectPower) {
         case 0: //Slow
@@ -256,6 +269,8 @@ void RandomEffectPicker() {
       break;
 
     case 4: //DiscoField
+      //Effect Direction not used
+      mqtt_EffectDirection = 8;
       //Settings for Effect syned with Effect Power
       switch (RandomEffectPower) {
         case 0: //Slow
@@ -279,6 +294,8 @@ void RandomEffectPicker() {
       break;
 
     case 5: //DiscoBall
+      //Effect Direction not used
+      mqtt_EffectDirection = 8;
       //Settings for Effect syned with Effect Power
       switch (RandomEffectPower) {
         case 0: //Slow
@@ -302,6 +319,8 @@ void RandomEffectPicker() {
       break;
 
     case 6: //RingRun
+      //Effect Direction used
+      mqtt_EffectDirection = RandomEffectDirection;
       //Settings for Effect syned with Effect Power
       switch (RandomEffectPower) {
         case 0: //Slow
@@ -325,6 +344,8 @@ void RandomEffectPicker() {
       break;
 
     case 7: //RainDrop
+      //Effect Direction used
+      mqtt_EffectDirection = RandomEffectDirection;
       //Settings for Effect syned with Effect Power
       switch (RandomEffectPower) {
         case 0: //Slow
@@ -348,6 +369,8 @@ void RandomEffectPicker() {
       break;
 
     case 8: //Equalizer
+      //Effect Direction not used
+      mqtt_EffectDirection = 8;
       //Settings for Effect syned with Effect Power
       switch (RandomEffectPower) {
         case 0: //Slow
@@ -387,55 +410,10 @@ void fillSolid() {
   ColorPickerRandomSyncNotSupported();
 }
 
-void Flash() {
-  unsigned long CurMillis_Effect = millis();
-  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed * 2) {
-    PrevMillis_Effect = CurMillis_Effect;
-    if (SwapFlash) {
-      SwapFlash = false;
-      for (int i = 0; i < matrix_x; i++) {
-        for (int u = 0; u < matrix_y; u++) {
-          leds[i][u] = CRGB(255, 255, 255);
-        }
-      }
-    } else {
-      SwapFlash = true;
-      for (int i = 0; i < matrix_x; i++) {
-        for (int u = 0; u < matrix_y; u++) {
-          leds[i][u] = CRGB(0, 0, 0);
-        }
-      }
-    }
-  }
-}
-
-void Rotor() {
-  unsigned long CurMillis_Effect = millis();
-  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
-    PrevMillis_Effect = CurMillis_Effect;
-    black();
-    for (int i = 0; i < 2; i++) {
-      for (int u = 0; u < matrix_y; u++) {
-        leds[i * int(matrix_x / 2) + XPositionRotor][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-      }
-    }
-    int maxPosX = matrix_x / 2;
-    if (XPositionRotor >= maxPosX) {
-      XPositionRotor = 0;
-      NextColor = true;
-    } else {
-      XPositionRotor++;
-    }
-  }
-}
-
 void WaveRefresh() {
   unsigned long CurMillis_Effect = millis();
   if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
     PrevMillis_Effect = CurMillis_Effect;
-
-    //Effect Only works with Random Color Sync
-    ColorPickerRandomSyncOnlySupported();
 
     switch (EffectDirection) {
 
@@ -491,105 +469,6 @@ void WaveRefresh() {
   }
 }
 
-void SpiralSnake() {
-  unsigned long CurMillis_Effect = millis();
-  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
-    PrevMillis_Effect = CurMillis_Effect;
-
-    leds[XLoopSnakeDirection][YLoopSnakeDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-    if (XLoopSnakeDirection < matrix_x - 1) {
-      XLoopSnakeDirection++;
-    } else {
-      XLoopSnakeDirection = 0;
-      if (YLoopSnakeDirection < matrix_y - 1) {
-        YLoopSnakeDirection++;
-      } else {
-        YLoopSnakeDirection = 0;
-        SwapLoopSnake = false;
-        NextColor = true;
-      }
-    }
-
-  }
-}
-
-void HappyNewYear() {
-  unsigned long CurMillis_Effect = millis();
-  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
-    PrevMillis_Effect = CurMillis_Effect;
-
-  }
-}
-
-void HappyBirthday() {
-  unsigned long CurMillis_Effect = millis();
-  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed * 2) {
-    PrevMillis_Effect = CurMillis_Effect;
-
-    int LineColorRed = abs(actualColorRed - 255);
-    int LineColorGreen = abs(actualColorGreen - 255);
-    int LineColorBlue = abs(actualColorBlue - 255);
-
-    for (int u = 0; u < matrix_y; u++) {
-      leds[matrix_x - 1][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
-      leds[matrix_x - 2][u] = CRGB(0, 0, 0);
-    }
-
-    ShiftArrayLeft();
-
-    for (int u = 0; u < 11; u++) {
-      if (Happy_Birthday_Array[u][HappyBirthdayPosX] == 1) {
-        leds[matrix_x - 3][6 + u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-      } else {
-        leds[matrix_x - 3][6 + u] = CRGB(0, 0, 0);
-      }
-    }
-    if (HappyBirthdayPosX >= (sizeof(Happy_Birthday_Array[0]) / sizeof(Happy_Birthday_Array[0][0]))) {
-      HappyBirthdayPosX = 0;
-    } else {
-      HappyBirthdayPosX++;
-    }
-    ColorPickerRandomSyncNotSupported();
-  }
-}
-
-void LoopSnake() {
-  unsigned long CurMillis_Effect = millis();
-  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
-    PrevMillis_Effect = CurMillis_Effect;
-    fadeall(FadeSpeed);
-    if (SwapLoopSnake) {
-      leds[XLoopSnakeDirection][YLoopSnakeDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-      if (XLoopSnakeDirection < matrix_x - 1) {
-        XLoopSnakeDirection++;
-      } else {
-        XLoopSnakeDirection = 0;
-        if (YLoopSnakeDirection < matrix_y - 1) {
-          YLoopSnakeDirection++;
-        } else {
-          YLoopSnakeDirection = 0;
-          SwapLoopSnake = false;
-          NextColor = true;
-        }
-      }
-    } else {
-      leds[matrix_x - 1 - XLoopSnakeDirection][matrix_y - 1 - YLoopSnakeDirection] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-      if (XLoopSnakeDirection < matrix_x - 1) {
-        XLoopSnakeDirection++;
-      } else {
-        XLoopSnakeDirection = 0;
-        if (YLoopSnakeDirection < matrix_y - 1) {
-          YLoopSnakeDirection++;
-        } else {
-          YLoopSnakeDirection = 0;
-          SwapLoopSnake = true;
-          NextColor = true;
-        }
-      }
-    }
-  }
-}
-
 void Matrix() {
   unsigned long CurMillis_Effect = millis();
   if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
@@ -623,109 +502,6 @@ void Matrix() {
         SwapMatrix = true;
       }
     }
-  }
-}
-
-void Circus() {
-  unsigned long CurMillis_Effect = millis();
-  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed * 5) {
-    PrevMillis_Effect = CurMillis_Effect;
-
-    if (NextLine) {
-      NextLine = false;
-    } else {
-      NextLine = true;
-      NextColor = true;
-    }
-
-    int LineColorRed   = abs(actualColorRed - 255);
-    int LineColorGreen = abs(actualColorGreen - 255);
-    int LineColorBlue  = abs(actualColorBlue - 255);
-
-    int x, y;
-
-    switch (EffectDirection) {
-      case 8: //Up
-      case 2: //Down
-        black();
-        y = matrix_y / 2;
-        if (y * 2 != matrix_y) {
-          y = matrix_y / 2 + 1;
-        }
-        if (NextLine) {
-          for (int u = 0; u < y; u++) {
-            for (int i = 0; i < matrix_x; i++) {
-              if (u % 2) {
-                leds[i][u * 2] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-                leds[i][u * 2 + 1] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-              } else {
-                leds[i][u * 2] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
-                leds[i][u * 2 + 1] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
-              }
-            }
-          }
-        } else {
-          for (int u = 0; u < y; u++) {
-            for (int i = 0; i < matrix_x; i++) {
-              if (u % 2) {
-                leds[i][u * 2] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
-                leds[i][u * 2 + 1] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
-              } else {
-                leds[i][u * 2] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-                leds[i][u * 2 + 1] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-              }
-            }
-          }
-        }
-        break;
-      case 4: //Left
-      case 6: //right
-        black();
-        x = matrix_x / 2;
-        if (x * 2 != matrix_x) {
-          x = matrix_x / 2 + 1;
-        }
-        if (NextLine) {
-          for (int i = 0; i < x; i++) {
-            for (int u = 0; u < matrix_y; u++) {
-              if (i % 2) {
-                leds[i * 2][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-                leds[i * 2 + 1][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-              } else {
-                leds[i * 2][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
-                leds[i * 2 + 1][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
-              }
-            }
-          }
-        } else {
-          for (int i = 0; i < x; i++) {
-            for (int u = 0; u < matrix_y; u++) {
-              if (i % 2) {
-                leds[i * 2][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
-                leds[i * 2 + 1][u] = CRGB(LineColorRed, LineColorGreen, LineColorBlue);
-              } else {
-                leds[i * 2][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-                leds[i * 2 + 1][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-              }
-            }
-          }
-        }
-        break;
-    }
-  }
-}
-
-void FullFlash() {
-  unsigned long CurMillis_Effect = millis();
-  if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed * 10) {
-    PrevMillis_Effect = CurMillis_Effect;
-    for (int i = 0 ; i < matrix_x; i++) {
-      for (int u = 0; u < matrix_y; u++) {
-        leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
-      }
-    }
-    //For Random Color Sync
-    NextColor = true;
   }
 }
 
@@ -998,8 +774,6 @@ void Equalizer() {
 }
 
 void RainDrop() {
-  //ToDo: Add Direction
-
   unsigned long CurMillis_Effect = millis();
   if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
     PrevMillis_Effect = CurMillis_Effect;

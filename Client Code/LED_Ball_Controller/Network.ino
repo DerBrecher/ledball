@@ -79,8 +79,6 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //Set for Serial.print in Information Tab
   NewData = true;
-  //Set for EEPROM Save
-  EEPROM_NewDataToSave = true;
   char NullBuffer[1] = {'0'};
 
   char message[length + 1];
@@ -88,9 +86,6 @@ void callback(char* topic, byte * payload, unsigned int length) {
     message[i] = (char)payload[i];
   }
   message[length] = '\0';
-
-  //New Changes only after loading Settings from EEPROM has finished
-  if (EEPROM_EspNewBoot == false) {
 
     //------------------- Parameter [mqtt_Power] -------------------//
     if (String(mqtt_state_Power).equals(topic)) {
@@ -374,7 +369,6 @@ void callback(char* topic, byte * payload, unsigned int length) {
       InitRave = true;
     }
 
-  }
 
   //------------------- Filter On / OFF Not used -------------------//
   if (String(mqtt_state_Filter1).equals(topic)) {
@@ -456,32 +450,16 @@ uint8_t MessageToEffectNumber(char* message) {
     return 8;
   } else if (strcmp(message, "DoubleBounce") == 0) {
     return 9;
-  } else if (strcmp(message, "FullFlash") == 0) {
-    return 10;
   } else if (strcmp(message, "HalfFlash") == 0) {
-    return 11;
+    return 10;
   } else if (strcmp(message, "QuarterFlash") == 0) {
-    return 12;
+    return 11;
   } else if (strcmp(message, "EighthFlash") == 0) {
-    return 13;
-  } else if (strcmp(message, "Circus") == 0) {
-    return 14;
+    return 12;
   } else if (strcmp(message, "Matrix") == 0) {
-    return 15;
-  } else if (strcmp(message, "LoopSnake") == 0) {
-    return 16;
-  } else if (strcmp(message, "HappyBirthday") == 0) {
-    return 17;
-  } else if (strcmp(message, "HappyNewYear") == 0) {
-    return 18;
-  } else if (strcmp(message, "SpiralSnake") == 0) {
-    return 19;
+    return 13;
   } else if (strcmp(message, "WaveRefresh") == 0) {
-    return 20;
-  } else if (strcmp(message, "Rotor") == 0) {
-    return 21;
-  } else if (strcmp(message, "Flash") == 0) {
-    return 22;
+    return 14;
   } else {
     return 0;
   }
