@@ -1,12 +1,11 @@
-//#define FASTLED_ESP8266_RAW_PIN_ORDER
+#define FASTLED_ESP8266_RAW_PIN_ORDER
 #include <FastLED.h>
-//#include <ESP8266WiFi.h>
-#include <WiFi.h>
+#include <ESP8266WiFi.h>
+//#include <WiFi.h>
 #include <PubSubClient.h>
-#include <EEPROM.h>
 
 //Include Secret Header
-#define LedBall1      //Define used MQTT Parameters
+#define LedBall2      //Define used MQTT Parameters
 #include <secrets.h>
 
 
@@ -14,15 +13,15 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "04.06.2019"
-#define Version     "1.1.14"
+#define LastModifed "13.06.2019"
+#define Version     "1.1.15"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   04.06.2019
-  Version       :   1.1.14
+  Last Modifed  :   13.06.2019
+  Version       :   1.1.15
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
@@ -71,7 +70,8 @@
                       Added RandomEffectPicker. Fixed some Bugs.
                     Version 1.1.14
                       Deleted Effects FullFlash, Happy Birthday, Happy New Year, Spiral Run, Loop Run, ... . Deleted EEPROM Save Option. Fixed bugs with Color Picker Filter.
-
+                    Version 1.1.15
+                      Small fixes with the MQTT Connection.
 
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
@@ -91,7 +91,7 @@
 //*************************************************************************************************//
 
 //Developer mode skips some initializations and blocks startup effects for shorter Startup time.
-boolean DevMode = true;
+boolean DevMode = false;
 boolean DevFilter = false;
 
 //--- LED Ball Parameters ---//
@@ -1049,7 +1049,7 @@ void ColorPickerFilterColorMulti() {
 void ColorPickerRandomSyncNotSupported() {
   if (SendNotSupported) {
     //Reset MQTT Switch
-    mqtt_Client.publish(mqtt_command_RandomColorSync, "0"); //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0"); //Turn of Random Color Sync
     SendNotSupported = false;
   }
   //Reset Light Control switch

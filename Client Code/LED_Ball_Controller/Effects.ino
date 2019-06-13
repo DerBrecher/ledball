@@ -830,13 +830,13 @@ void RingRun() {
         }
         break;
 
-      case 8: //up
+      case 2: //down
         for (int i = 0; i < matrix_x; i++) {
           leds[i][PosYEffectRingRun] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }
         break;
 
-      case 2: //down
+      case 8: //up
         for (int i = 0; i < matrix_x; i++) {
           leds[i][(matrix_y - 1) - PosYEffectRingRun] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
         }

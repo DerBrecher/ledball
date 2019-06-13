@@ -8,6 +8,7 @@ void wifi() {
   delay(1);
   //Start Wifi Connection
   if (StartWifiConnection) {
+    WiFi.mode(WIFI_STA);
     WiFi.begin(SSIDWZ, WPA2WZ);
     StartWifiConnection = false;
   }
@@ -31,7 +32,7 @@ void wifi() {
   }
 
   //Restart ESP after the Counter hits 10
-  if (int(NoWifiCounter) >= 10) {
+  if (int(NoWifiCounter) >= 30) {
     ESP.restart();
   }
 
@@ -44,28 +45,28 @@ void mqtt() {
   if (!mqtt_Client.connected() and WiFi.status() == WL_CONNECTED) {
     if (mqtt_Client.connect(mqtt_client_name, mqtt_username, mqtt_password)) {
       Serial.println("Start channel subscription");
-      mqtt_Client.subscribe( mqtt_state_Power);
-      mqtt_Client.subscribe( mqtt_state_RandomColor);
-      mqtt_Client.subscribe( mqtt_state_RainbowColor);
-      mqtt_Client.subscribe( mqtt_state_RandomColorSync);
-      mqtt_Client.subscribe( mqtt_state_FilterColorMulti);
-      mqtt_Client.subscribe( mqtt_state_Filter1_Color);
-      mqtt_Client.subscribe( mqtt_state_Filter2_Color);
-      mqtt_Client.subscribe( mqtt_state_Filter3_Color);
-      mqtt_Client.subscribe( mqtt_state_Filter4_Color);
-      mqtt_Client.subscribe( mqtt_state_Color);
-      mqtt_Client.subscribe( mqtt_state_Brightness);
-      mqtt_Client.subscribe( mqtt_state_RandomEffect);
-      mqtt_Client.subscribe( mqtt_state_EffectSpeed);
-      mqtt_Client.subscribe( mqtt_state_FadeSpeed);
-      mqtt_Client.subscribe( mqtt_state_EffectNumber);
-      mqtt_Client.subscribe( mqtt_state_EffectDirection);
-      mqtt_Client.subscribe( mqtt_state_RandomEffectPower);
+      mqtt_Client.subscribe( mqtt_command_Power);
+      mqtt_Client.subscribe( mqtt_command_RandomColor);
+      mqtt_Client.subscribe( mqtt_command_RainbowColor);
+      mqtt_Client.subscribe( mqtt_command_RandomColorSync);
+      mqtt_Client.subscribe( mqtt_command_FilterColorMulti);
+      mqtt_Client.subscribe( mqtt_command_Filter1_Color);
+      mqtt_Client.subscribe( mqtt_command_Filter2_Color);
+      mqtt_Client.subscribe( mqtt_command_Filter3_Color);
+      mqtt_Client.subscribe( mqtt_command_Filter4_Color);
+      mqtt_Client.subscribe( mqtt_command_Color);
+      mqtt_Client.subscribe( mqtt_command_Brightness);
+      mqtt_Client.subscribe( mqtt_command_RandomEffect);
+      mqtt_Client.subscribe( mqtt_command_EffectSpeed);
+      mqtt_Client.subscribe( mqtt_command_FadeSpeed);
+      mqtt_Client.subscribe( mqtt_command_EffectNumber);
+      mqtt_Client.subscribe( mqtt_command_EffectDirection);
+      mqtt_Client.subscribe( mqtt_command_RandomEffectPower);
       //---- Not Used Parameter ----//
-      mqtt_Client.subscribe( mqtt_state_Filter1);
-      mqtt_Client.subscribe( mqtt_state_Filter2);
-      mqtt_Client.subscribe( mqtt_state_Filter3);
-      mqtt_Client.subscribe( mqtt_state_Filter4);
+      mqtt_Client.subscribe( mqtt_command_Filter1);
+      mqtt_Client.subscribe( mqtt_command_Filter2);
+      mqtt_Client.subscribe( mqtt_command_Filter3);
+      mqtt_Client.subscribe( mqtt_command_Filter4);
       Serial.println("Finished channel subscription");
     } else {
       Serial.println("No MQTT subscribtion possible");
@@ -87,337 +88,338 @@ void callback(char* topic, byte * payload, unsigned int length) {
   }
   message[length] = '\0';
 
-    //------------------- Parameter [mqtt_Power] -------------------//
-    if (String(mqtt_state_Power).equals(topic)) {
-      if (strcmp(message, "ON") == 0) {
-        mqtt_Power = true;
-        mqtt_Client.publish(mqtt_command_Power, "ON");
-      }
-      else {
-        mqtt_Power = false;
-        mqtt_Client.publish(mqtt_command_Power, "OFF");
-      }
+  //------------------- Parameter [mqtt_Power] -------------------//
+  if (String(mqtt_command_Power).equals(topic)) {
+    if (atoi(message)) {
+      mqtt_Power = true;
+      mqtt_Client.publish(mqtt_state_Power, "1");
     }
-
-    //------------------- Parameter [mqtt_RandomColor] -------------------//
-    if (String(mqtt_state_RandomColor).equals(topic)) {
-      int temp_1Bit = Check1BitBoundaries(atoi(message));
-      if (temp_1Bit) {
-        mqtt_RandomColor      = true;
-        mqtt_RainbowColor     = false;
-        mqtt_RandomColorSync  = false;
-        mqtt_FilterColorMulti = false;
-      } else {
-        mqtt_RandomColor      = false;
-        mqtt_RainbowColor     = false;
-        mqtt_RandomColorSync  = false;
-        mqtt_FilterColorMulti = false;
-      }
-
-      mqtt_Client.publish(mqtt_command_RandomColor, message);         //State of Random Color
-      mqtt_Client.publish(mqtt_command_RainbowColor, "0");     //Turn of Rainbow Color
-      mqtt_Client.publish(mqtt_command_RandomColorSync, "0");  //Turn of Random Color Sync
-      mqtt_Client.publish(mqtt_command_FilterColorMulti, "0"); //Turn of Filter Color Multi
-
-      //For Random Color Sync
-      SendNotSupported = true;
-      SendOnlySupported = true;
+    else {
+      mqtt_Power = false;
+      mqtt_Client.publish(mqtt_state_Power, "0");
     }
+  }
 
-    //------------------- Parameter [mqtt_RainbowColor] -------------------//
-    if (String(mqtt_state_RainbowColor).equals(topic)) {
-      int temp_1Bit = Check1BitBoundaries(atoi(message));
-      if (temp_1Bit) {
-        mqtt_RandomColor      = false;
-        mqtt_RainbowColor     = true;
-        mqtt_RandomColorSync  = false;
-        mqtt_FilterColorMulti = false;
-      } else {
-        mqtt_RandomColor      = false;
-        mqtt_RainbowColor     = false;
-        mqtt_RandomColorSync  = false;
-        mqtt_FilterColorMulti = false;
-      }
-      mqtt_Client.publish(mqtt_command_RandomColor, "0");      //Turn of Random Color
-      mqtt_Client.publish(mqtt_command_RainbowColor, message);        //State of Rainbow Color
-      mqtt_Client.publish(mqtt_command_RandomColorSync, "0");  //Turn of Random Color Sync
-      mqtt_Client.publish(mqtt_command_FilterColorMulti, "0"); //Turn of Filter Color Multi
-
-      //For Random Color Sync
-      SendNotSupported = true;
-      SendOnlySupported = true;
-    }
-
-    //------------------- Parameter [mqtt_RandomColorSync] -------------------//
-    if (String(mqtt_state_RandomColorSync).equals(topic)) {
-      int temp_1Bit = Check1BitBoundaries(atoi(message));
-      if (temp_1Bit) {
-        mqtt_RandomColor      = false;
-        mqtt_RainbowColor     = false;
-        mqtt_RandomColorSync  = true;
-        mqtt_FilterColorMulti = false;
-      } else {
-        mqtt_RandomColor      = false;
-        mqtt_RainbowColor     = false;
-        mqtt_RandomColorSync  = false;
-        mqtt_FilterColorMulti = false;
-      }
-      mqtt_Client.publish(mqtt_command_RandomColor, "0");  //Turn of Random Color
-      mqtt_Client.publish(mqtt_command_RainbowColor, "0"); //Turn of Rainbow Color
-      mqtt_Client.publish(mqtt_command_RandomColorSync, message); //State of Random Color Sync
-      mqtt_Client.publish(mqtt_command_FilterColorMulti, "0"); //Turn of Filter Color Multi
-
-      //For Random Color Sync
-      SendNotSupported = true;
-      SendOnlySupported = true;
-    }
-
-    //------------------- Parameter [mqtt_state_FilterColorMulti] -------------------//
-    if (String(mqtt_state_FilterColorMulti).equals(topic)) {
-      int temp_1Bit = Check1BitBoundaries(atoi(message));
-      if (temp_1Bit) {
-        mqtt_RandomColor      = false;
-        mqtt_RainbowColor     = false;
-        mqtt_RandomColorSync  = false;
-        mqtt_FilterColorMulti = true;
-      } else {
-        mqtt_RandomColor      = false;
-        mqtt_RainbowColor     = false;
-        mqtt_RandomColorSync  = false;
-        mqtt_FilterColorMulti = false;
-      }
-      mqtt_Client.publish(mqtt_command_RandomColor, "0");  //Turn of Random Color
-      mqtt_Client.publish(mqtt_command_RainbowColor, "0"); //Turn of Rainbow Color
-      mqtt_Client.publish(mqtt_command_RandomColorSync, "0"); //Turn of Random Color Sync
-      mqtt_Client.publish(mqtt_command_FilterColorMulti, message); //State of Filter Color Multi
-
-      //For Random Color Sync
-      SendNotSupported = true;
-      SendOnlySupported = true;
-    }
-
-    //------------------- Parameter [mqtt_Filter1Red, mqtt_Filter1Green, mqtt_Filter1Blue] -------------------//
-    if (String(mqtt_state_Filter1_Color).equals(topic)) {
-      char* red   = strtok(message, ",");
-      char* green = strtok(NULL, ",");
-      char* blue  = strtok(NULL, ",");
-
-      //Check if Data has changed from Last time (for information print)
-      if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
-        LightDataChange = true;
-      }
-
-      mqtt_Filter1Red    = Check8BitBoundaries(atoi(red));
-      mqtt_Filter1Green  = Check8BitBoundaries(atoi(green));
-      mqtt_Filter1Blue   = Check8BitBoundaries(atoi(blue));
-
-      mqtt_Client.publish(mqtt_command_Filter1_Color, message);
-    }
-
-    //------------------- Parameter [mqtt_Filter2Red, mqtt_Filter2Green, mqtt_Filter2Blue] -------------------//
-    if (String(mqtt_state_Filter2_Color).equals(topic)) {
-      char* red   = strtok(message, ",");
-      char* green = strtok(NULL, ",");
-      char* blue  = strtok(NULL, ",");
-
-      //Check if Data has changed from Last time (for information print)
-      if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
-        LightDataChange = true;
-      }
-
-      mqtt_Filter2Red    = Check8BitBoundaries(atoi(red));
-      mqtt_Filter2Green  = Check8BitBoundaries(atoi(green));
-      mqtt_Filter2Blue   = Check8BitBoundaries(atoi(blue));
-
-      mqtt_Client.publish(mqtt_command_Filter2_Color, message);
-    }
-
-    //------------------- Parameter [mqtt_Filter3Red, mqtt_Filter3Green, mqtt_Filter3Blue] -------------------//
-    if (String(mqtt_state_Filter3_Color).equals(topic)) {
-      char* red   = strtok(message, ",");
-      char* green = strtok(NULL, ",");
-      char* blue  = strtok(NULL, ",");
-
-      //Check if Data has changed from Last time (for information print)
-      if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
-        LightDataChange = true;
-      }
-
-      mqtt_Filter3Red    = Check8BitBoundaries(atoi(red));
-      mqtt_Filter3Green  = Check8BitBoundaries(atoi(green));
-      mqtt_Filter3Blue   = Check8BitBoundaries(atoi(blue));
-
-      mqtt_Client.publish(mqtt_command_Filter3_Color, message);
-    }
-
-    //------------------- Parameter [mqtt_Filter4Red, mqtt_Filter4Green, mqtt_Filter4Blue] -------------------//
-    if (String(mqtt_state_Filter4_Color).equals(topic)) {
-
-      char* red   = strtok(message, ",");
-      char* green = strtok(NULL, ",");
-      char* blue  = strtok(NULL, ",");
-
-      //Check if Data has changed from Last time (for information print)
-      if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
-        LightDataChange = true;
-      }
-
-      mqtt_Filter4Red    = Check8BitBoundaries(atoi(red));
-      mqtt_Filter4Green  = Check8BitBoundaries(atoi(green));
-      mqtt_Filter4Blue   = Check8BitBoundaries(atoi(blue));
-
-      mqtt_Client.publish(mqtt_command_Filter4_Color, message);
-    }
-
-    //------------------- Parameter [mqtt_Red, mqtt_Green, mqtt_Blue] -------------------//
-    if (String(mqtt_state_Color).equals(topic)) {
-      char* red   = strtok(message, ",");
-      char* green = strtok(NULL, ",");
-      char* blue  = strtok(NULL, ",");
-
-      mqtt_Red    = Check8BitBoundaries(atoi(red));
-      mqtt_Green  = Check8BitBoundaries(atoi(green));
-      mqtt_Blue   = Check8BitBoundaries(atoi(blue));
-
+  //------------------- Parameter [mqtt_RandomColor] -------------------//
+  if (String(mqtt_command_RandomColor).equals(topic)) {
+    int temp_1Bit = Check1BitBoundaries(atoi(message));
+    if (temp_1Bit) {
+      mqtt_RandomColor      = true;
+      mqtt_RainbowColor     = false;
+      mqtt_RandomColorSync  = false;
+      mqtt_FilterColorMulti = false;
+    } else {
       mqtt_RandomColor      = false;
       mqtt_RainbowColor     = false;
       mqtt_RandomColorSync  = false;
       mqtt_FilterColorMulti = false;
-
-      mqtt_Client.publish(mqtt_command_RandomColor, "0");     //Turn of Random Color
-      mqtt_Client.publish(mqtt_command_RainbowColor, "0");    //Turn of Rainbow Color
-      mqtt_Client.publish(mqtt_command_RandomColorSync, "0"); //Turn of Random Color Sync
-      mqtt_Client.publish(mqtt_command_FilterColorMulti, "0"); //Turn of Filter Color Multi
-
-      mqtt_Client.publish(mqtt_command_Color, message);
-
-      //For Random Color Sync
-      SendNotSupported = true;
-      SendOnlySupported = true;
     }
 
-    //------------------- Parameter [mqtt_Brightness] -------------------//
-    if (String(mqtt_state_Brightness).equals(topic)) {
-      mqtt_Brightness = Check8BitBoundaries(atoi(message));
-      mqtt_Client.publish(mqtt_command_Brightness, message);
+    mqtt_Client.publish(mqtt_state_RandomColor, message);         //State of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, "0");     //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0");  //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0"); //Turn of Filter Color Multi
+
+    //For Random Color Sync
+    SendNotSupported = true;
+    SendOnlySupported = true;
+  }
+
+  //------------------- Parameter [mqtt_RainbowColor] -------------------//
+  if (String(mqtt_command_RainbowColor).equals(topic)) {
+    int temp_1Bit = Check1BitBoundaries(atoi(message));
+    if (temp_1Bit) {
+      mqtt_RandomColor      = false;
+      mqtt_RainbowColor     = true;
+      mqtt_RandomColorSync  = false;
+      mqtt_FilterColorMulti = false;
+    } else {
+      mqtt_RandomColor      = false;
+      mqtt_RainbowColor     = false;
+      mqtt_RandomColorSync  = false;
+      mqtt_FilterColorMulti = false;
+    }
+    mqtt_Client.publish(mqtt_state_RandomColor, "0");      //Turn of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, message);        //State of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0");  //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0"); //Turn of Filter Color Multi
+
+    //For Random Color Sync
+    SendNotSupported = true;
+    SendOnlySupported = true;
+  }
+
+  //------------------- Parameter [mqtt_RandomColorSync] -------------------//
+  if (String(mqtt_command_RandomColorSync).equals(topic)) {
+    int temp_1Bit = Check1BitBoundaries(atoi(message));
+    if (temp_1Bit) {
+      mqtt_RandomColor      = false;
+      mqtt_RainbowColor     = false;
+      mqtt_RandomColorSync  = true;
+      mqtt_FilterColorMulti = false;
+    } else {
+      mqtt_RandomColor      = false;
+      mqtt_RainbowColor     = false;
+      mqtt_RandomColorSync  = false;
+      mqtt_FilterColorMulti = false;
+    }
+    mqtt_Client.publish(mqtt_state_RandomColor, "0");  //Turn of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, "0"); //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, message); //State of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0"); //Turn of Filter Color Multi
+
+    //For Random Color Sync
+    SendNotSupported = true;
+    SendOnlySupported = true;
+  }
+
+  //------------------- Parameter [mqtt_state_FilterColorMulti] -------------------//
+  if (String(mqtt_command_FilterColorMulti).equals(topic)) {
+    int temp_1Bit = Check1BitBoundaries(atoi(message));
+    if (temp_1Bit) {
+      mqtt_RandomColor      = false;
+      mqtt_RainbowColor     = false;
+      mqtt_RandomColorSync  = false;
+      mqtt_FilterColorMulti = true;
+    } else {
+      mqtt_RandomColor      = false;
+      mqtt_RainbowColor     = false;
+      mqtt_RandomColorSync  = false;
+      mqtt_FilterColorMulti = false;
+    }
+    mqtt_Client.publish(mqtt_state_RandomColor, "0");  //Turn of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, "0"); //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0"); //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, message); //State of Filter Color Multi
+
+    //For Random Color Sync
+    SendNotSupported = true;
+    SendOnlySupported = true;
+  }
+
+  //------------------- Parameter [mqtt_Filter1Red, mqtt_Filter1Green, mqtt_Filter1Blue] -------------------//
+  if (String(mqtt_command_Filter1_Color).equals(topic)) {
+    char* red   = strtok(message, ",");
+    char* green = strtok(NULL, ",");
+    char* blue  = strtok(NULL, ",");
+
+    //Check if Data has changed from Last time (for information print)
+    if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
+      LightDataChange = true;
     }
 
-    //------------------- Parameter [mqtt_RandomEffect] -------------------//
-    if (String(mqtt_state_RandomEffect).equals(topic)) {
-      int temp_1Bit = Check1BitBoundaries(atoi(message));
-      if (temp_1Bit) {
-        mqtt_RandomEffect = true;
-      } else {
-        mqtt_RandomEffect = false;
-      }
-      mqtt_Client.publish(mqtt_command_RandomEffect, message);
+    mqtt_Filter1Red    = Check8BitBoundaries(atoi(red));
+    mqtt_Filter1Green  = Check8BitBoundaries(atoi(green));
+    mqtt_Filter1Blue   = Check8BitBoundaries(atoi(blue));
+
+    mqtt_Client.publish(mqtt_state_Filter1_Color, message);
+  }
+
+  //------------------- Parameter [mqtt_Filter2Red, mqtt_Filter2Green, mqtt_Filter2Blue] -------------------//
+  if (String(mqtt_command_Filter2_Color).equals(topic)) {
+    char* red   = strtok(message, ",");
+    char* green = strtok(NULL, ",");
+    char* blue  = strtok(NULL, ",");
+
+    //Check if Data has changed from Last time (for information print)
+    if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
+      LightDataChange = true;
     }
 
-    //------------------- Parameter [mqtt_RandomEffectPower] -------------------//
-    if (String(mqtt_state_RandomEffectPower).equals(topic)) {
-      mqtt_RandomEffectPower = Check8BitBoundaries(atoi(message));
-      mqtt_Client.publish(mqtt_command_RandomEffectPower, message);
+    mqtt_Filter2Red    = Check8BitBoundaries(atoi(red));
+    mqtt_Filter2Green  = Check8BitBoundaries(atoi(green));
+    mqtt_Filter2Blue   = Check8BitBoundaries(atoi(blue));
+
+    mqtt_Client.publish(mqtt_state_Filter2_Color, message);
+  }
+
+  //------------------- Parameter [mqtt_Filter3Red, mqtt_Filter3Green, mqtt_Filter3Blue] -------------------//
+  if (String(mqtt_command_Filter3_Color).equals(topic)) {
+    char* red   = strtok(message, ",");
+    char* green = strtok(NULL, ",");
+    char* blue  = strtok(NULL, ",");
+
+    //Check if Data has changed from Last time (for information print)
+    if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
+      LightDataChange = true;
     }
 
-    //------------------- Parameter [mqtt_EffectSpeed] -------------------//
-    if (String(mqtt_state_EffectSpeed).equals(topic)) {
-      mqtt_EffectSpeed = Check8BitBoundaries(atoi(message));
-      mqtt_Client.publish(mqtt_command_EffectSpeed, message);
+    mqtt_Filter3Red    = Check8BitBoundaries(atoi(red));
+    mqtt_Filter3Green  = Check8BitBoundaries(atoi(green));
+    mqtt_Filter3Blue   = Check8BitBoundaries(atoi(blue));
+
+    mqtt_Client.publish(mqtt_state_Filter3_Color, message);
+  }
+
+  //------------------- Parameter [mqtt_Filter4Red, mqtt_Filter4Green, mqtt_Filter4Blue] -------------------//
+  if (String(mqtt_command_Filter4_Color).equals(topic)) {
+
+    char* red   = strtok(message, ",");
+    char* green = strtok(NULL, ",");
+    char* blue  = strtok(NULL, ",");
+
+    //Check if Data has changed from Last time (for information print)
+    if (mqtt_Filter4Red != Check8BitBoundaries(atoi(red)) || mqtt_Filter4Green != Check8BitBoundaries(atoi(green)) || mqtt_Filter4Blue != Check8BitBoundaries(atoi(blue))) {
+      LightDataChange = true;
     }
 
-    //------------------- Parameter [mqtt_FadeSpeed] -------------------//
-    if (String(mqtt_state_FadeSpeed).equals(topic)) {
-      mqtt_FadeSpeed = Check8BitBoundaries(atoi(message));
-      //Fade Speed cant be 255 or the Fade will crash
-      if (mqtt_FadeSpeed == 255) {
-        mqtt_FadeSpeed - 1;
-      }
-      mqtt_Client.publish(mqtt_command_FadeSpeed, message);
+    mqtt_Filter4Red    = Check8BitBoundaries(atoi(red));
+    mqtt_Filter4Green  = Check8BitBoundaries(atoi(green));
+    mqtt_Filter4Blue   = Check8BitBoundaries(atoi(blue));
+
+    mqtt_Client.publish(mqtt_state_Filter4_Color, message);
+  }
+
+  //------------------- Parameter [mqtt_Red, mqtt_Green, mqtt_Blue] -------------------//
+  if (String(mqtt_command_Color).equals(topic)) {
+    char* red   = strtok(message, ",");
+    char* green = strtok(NULL, ",");
+    char* blue  = strtok(NULL, ",");
+
+    mqtt_Red    = Check8BitBoundaries(atoi(red));
+    mqtt_Green  = Check8BitBoundaries(atoi(green));
+    mqtt_Blue   = Check8BitBoundaries(atoi(blue));
+
+    mqtt_RandomColor      = false;
+    mqtt_RainbowColor     = false;
+    mqtt_RandomColorSync  = false;
+    mqtt_FilterColorMulti = false;
+
+    mqtt_Client.publish(mqtt_state_RandomColor, "0");     //Turn of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, "0");    //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0"); //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0"); //Turn of Filter Color Multi
+
+    mqtt_Client.publish(mqtt_state_Color, message);
+
+    //For Random Color Sync
+    SendNotSupported = true;
+    SendOnlySupported = true;
+  }
+
+  //------------------- Parameter [mqtt_Brightness] -------------------//
+  if (String(mqtt_command_Brightness).equals(topic)) {
+    mqtt_Brightness = Check8BitBoundaries(atoi(message));
+    mqtt_Client.publish(mqtt_state_Brightness, message);
+  }
+
+  //------------------- Parameter [mqtt_RandomEffect] -------------------//
+  if (String(mqtt_command_RandomEffect).equals(topic)) {
+    if (atoi(message)) {
+      mqtt_RandomEffect = true;
+      mqtt_Client.publish(mqtt_state_RandomEffect, "1");
+    } else {
+      mqtt_RandomEffect = false;
+      mqtt_Client.publish(mqtt_state_RandomEffect, "0");
+    }
+    
+  }
+
+  //------------------- Parameter [mqtt_RandomEffectPower] -------------------//
+  if (String(mqtt_command_RandomEffectPower).equals(topic)) {
+    mqtt_RandomEffectPower = Check8BitBoundaries(atoi(message));
+    mqtt_Client.publish(mqtt_state_RandomEffectPower, message);
+  }
+
+  //------------------- Parameter [mqtt_EffectSpeed] -------------------//
+  if (String(mqtt_command_EffectSpeed).equals(topic)) {
+    mqtt_EffectSpeed = Check8BitBoundaries(atoi(message));
+    mqtt_Client.publish(mqtt_state_EffectSpeed, message);
+  }
+
+  //------------------- Parameter [mqtt_FadeSpeed] -------------------//
+  if (String(mqtt_command_FadeSpeed).equals(topic)) {
+    mqtt_FadeSpeed = Check8BitBoundaries(atoi(message));
+    //Fade Speed cant be 255 or the Fade will crash
+    if (mqtt_FadeSpeed == 255) {
+      mqtt_FadeSpeed - 1;
+    }
+    mqtt_Client.publish(mqtt_state_FadeSpeed, message);
+  }
+
+  //------------------- Parameter [mqtt_EffectNumber] -------------------//
+  if (String(mqtt_command_EffectNumber).equals(topic)) {
+
+    //Check if Message is a Number or a Text
+    if (!isdigit(message[0])) {
+      mqtt_EffectNumber = MessageToEffectNumber(message);
+    } else {
+      mqtt_EffectNumber = Check8BitBoundaries(atoi(message));
     }
 
-    //------------------- Parameter [mqtt_EffectNumber] -------------------//
-    if (String(mqtt_state_EffectNumber).equals(topic)) {
+    mqtt_Client.publish(mqtt_state_EffectNumber, message);
+  }
 
-      //Check if Message is a Number or a Text
-      if (!isdigit(message[0])) {
-        mqtt_EffectNumber = MessageToEffectNumber(message);
-      } else {
-        mqtt_EffectNumber = Check8BitBoundaries(atoi(message));
-      }
-
-      mqtt_Client.publish(mqtt_command_EffectNumber, message);
+  //------------------- Parameter [mqtt_EffectDirection] -------------------//
+  if (String(mqtt_command_EffectDirection).equals(topic)) {
+    int TempDirection;
+    if (strcmp(message, "8") == 0) {
+      TempDirection = 8;
+    } else if (strcmp(message, "4") == 0) {
+      TempDirection = 4;
+    } else if (strcmp(message, "2") == 0) {
+      TempDirection = 2;
+    } else if (strcmp(message, "6") == 0) {
+      TempDirection = 6;
+    } else {
+      TempDirection = 8;
     }
+    mqtt_EffectDirection = CheckDirectionBoundaries(TempDirection);
+    mqtt_Client.publish(mqtt_state_EffectDirection, message);
 
-    //------------------- Parameter [mqtt_EffectDirection] -------------------//
-    if (String(mqtt_state_EffectDirection).equals(topic)) {
-      int TempDirection;
-      if (strcmp(message, "Oben") == 0) {
-        TempDirection = 8;
-      } else if (strcmp(message, "Links") == 0) {
-        TempDirection = 4;
-      } else if (strcmp(message, "Unten") == 0) {
-        TempDirection = 2;
-      } else if (strcmp(message, "Rechts") == 0) {
-        TempDirection = 6;
-      } else {
-        TempDirection = 8;
-      }
-      mqtt_EffectDirection = CheckDirectionBoundaries(TempDirection);
-      mqtt_Client.publish(mqtt_command_EffectDirection, message);
-
-      //Needed for Rave
-      InitRave = true;
-    }
+    //Needed for Rave
+    InitRave = true;
+  }
 
 
   //------------------- Filter On / OFF Not used -------------------//
-  if (String(mqtt_state_Filter1).equals(topic)) {
+  if (String(mqtt_command_Filter1).equals(topic)) {
     LightDataChange = true;
-    if (strcmp(message, "ON") == 0) {
-      mqtt_Client.publish(mqtt_command_Filter1, "ON");
+    if (atoi(message)) {
+      mqtt_Client.publish(mqtt_state_Filter1, "1");
       Filter1Active = true;
     }
     else {
-      mqtt_Client.publish(mqtt_command_Filter1, "OFF");
+      mqtt_Client.publish(mqtt_state_Filter1, "0");
       Filter1Active = false;
     }
   }
 
   //------------------- Filter On / OFF Not used -------------------//
-  if (String(mqtt_state_Filter2).equals(topic)) {
+  if (String(mqtt_command_Filter2).equals(topic)) {
     LightDataChange = true;
-    if (strcmp(message, "ON") == 0) {
-      mqtt_Client.publish(mqtt_command_Filter2, "ON");
+    if (atoi(message)) {
+      mqtt_Client.publish(mqtt_state_Filter2, "1");
       Filter2Active = true;
     }
     else {
-      mqtt_Client.publish(mqtt_command_Filter2, "OFF");
+      mqtt_Client.publish(mqtt_state_Filter2, "0");
       Filter2Active = false;
     }
   }
 
   //------------------- Filter On / OFF Not used -------------------//
-  if (String(mqtt_state_Filter3).equals(topic)) {
+  if (String(mqtt_command_Filter3).equals(topic)) {
     LightDataChange = true;
-    if (strcmp(message, "ON") == 0) {
-      mqtt_Client.publish(mqtt_command_Filter3, "ON");
+    if (atoi(message)) {
+      mqtt_Client.publish(mqtt_state_Filter3, "1");
       Filter3Active = true;
     }
     else {
-      mqtt_Client.publish(mqtt_command_Filter3, "OFF");
+      mqtt_Client.publish(mqtt_state_Filter3, "0");
       Filter3Active = false;
     }
   }
 
   //------------------- Filter On / OFF Not used -------------------//
-  if (String(mqtt_state_Filter4).equals(topic)) {
+  if (String(mqtt_command_Filter4).equals(topic)) {
     LightDataChange = true;
-    if (strcmp(message, "ON") == 0) {
-      mqtt_Client.publish(mqtt_command_Filter4, "ON");
+    if (atoi(message)) {
+      mqtt_Client.publish(mqtt_state_Filter4, "1");
       Filter4Active = true;
     }
     else {
-      mqtt_Client.publish(mqtt_command_Filter4, "OFF");
+      mqtt_Client.publish(mqtt_state_Filter4, "0");
       Filter4Active = false;
     }
   }
@@ -427,7 +429,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 uint8_t MessageToEffectNumber(char* message) {
   //Deactivate RandomEffect if Manuel Effect is selected
   mqtt_RandomEffect = false;
-  mqtt_Client.publish(mqtt_command_RandomEffect, "OFF");
+  mqtt_Client.publish(mqtt_state_RandomEffect, "0");
 
   //Converts Name of the Effect to the EffectNumber
   if (strcmp(message, "black") == 0) {
