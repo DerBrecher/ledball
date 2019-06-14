@@ -13,15 +13,15 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "13.06.2019"
-#define Version     "1.1.15"
+#define LastModifed "14.06.2019"
+#define Version     "1.1.16"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   13.06.2019
-  Version       :   1.1.15
+  Last Modifed  :   14.06.2019
+  Version       :   1.1.16
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
@@ -32,7 +32,7 @@
 
   Bugs          :   - Color Picker goes to white after time.
 
-  Optimize      :   1. Put MQTT Paths in Secret Header into an Array and add an Array for the Recived Data
+  Optimize      :   -
 
   Error Help    :   1. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
                     2. If the ball has a red ring going around it. Then its a General Error. If this happens try to pick an other effect. If this doesnt change anything
@@ -72,6 +72,8 @@
                       Deleted Effects FullFlash, Happy Birthday, Happy New Year, Spiral Run, Loop Run, ... . Deleted EEPROM Save Option. Fixed bugs with Color Picker Filter.
                     Version 1.1.15
                       Small fixes with the MQTT Connection.
+                    Version 1.1.16
+                      Small fixes with the Publish of the Color Values. Added Error Effect when no MQTT Broker is Aviable
 
 
   EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
@@ -519,13 +521,20 @@ void loop() {
 
   //Monitoring Wifi Connection. If it doesnt reconnect in 300ms * 10 then restart ESP
   //Reconnect to WiFi if it loses connection. After that try to connect to MQTT
-  if (!mqtt_Client.connected()) {
+  if (!mqtt_Client.connected() and WiFi.status() == WL_CONNECTED) {
     mqtt();
+    if (MainState != 888 and MainState != 999) {
+      MainStateMemory = MainState;
+      MainState = 888;
+    }
+  }
+  if (mqtt_Client.connected() and WiFi.status() == WL_CONNECTED and MainState == 888) {
+    MainState = MainStateMemory;
   }
 
   if (WiFi.status() != WL_CONNECTED) {
     wifi();
-    if (MainState != 999) {
+    if (MainState != 999 and MainState != 888) {
       MainStateMemory = MainState;
       MainState = 999;
     }
@@ -553,29 +562,19 @@ void loop() {
       }
       break;
 
-    case 10: //Initialization of the MQTT Parameter
-      InitMqttParameter();
-      MainState = 20;
-      break;
-
-    case 20: //Initialization of Arrays who are used in Effects and have to be preloaded
-      InitEffectArrays();
-      MainState = 30;
-      break;
-
-    case 30: //Startup Effect to show the User that the Ball is ready to use
+    case 10: //Startup Effect to show the User that the Ball is ready to use
       if (DevMode) {
         MainState = 100;
       } else {
         boolean StartupEffectFinished = StartupReadyEffect();
         if (StartupEffectFinished) {
-          MainState = 40;
+          MainState = 20;
         }
       }
       break;
 
-    case 40: //Waits 3 Seconds after StartupEffect and Blacks out the Ball
-      delay(3000);
+    case 20: //Waits 0,5 Seconds after StartupEffect and Blacks out the Ball
+      delay(500);
       black();
       MainState = 100;
       break;
@@ -585,6 +584,10 @@ void loop() {
       syncParameter();
       //Light Control
       lightControl();
+      break;
+
+    case 888: //Error Mode when no Mqtt is Connected
+      noMqttConnection();
       break;
 
     case 999: //Error Mode when no WiFi is Connected
@@ -1087,65 +1090,4 @@ void syncParameter() {
   EffectNumber      = mqtt_EffectNumber;
   EffectDirection   = mqtt_EffectDirection;
   RandomEffectPower = mqtt_RandomEffectPower;
-}
-
-//--------------------------- Init MQTT Parameter ---------------------------//
-void InitMqttParameter() {
-  //Initializing the MQTT LED Ball parameters will later be overwritten
-  mqtt_Power            = false;
-  mqtt_RandomColor      = false;
-  mqtt_RainbowColor     = false;
-  mqtt_RandomColorSync  = false;
-  mqtt_FilterColorMulti = false;
-  mqtt_Filter1Red       = 0;
-  mqtt_Filter1Green     = 0;
-  mqtt_Filter1Blue      = 0;
-  mqtt_Filter2Red       = 0;
-  mqtt_Filter2Green     = 0;
-  mqtt_Filter2Blue      = 0;
-  mqtt_Filter3Red       = 0;
-  mqtt_Filter3Green     = 0;
-  mqtt_Filter3Blue      = 0;
-  mqtt_Filter4Red       = 0;
-  mqtt_Filter4Green     = 0;
-  mqtt_Filter4Blue      = 0;
-  mqtt_Red              = 0;
-  mqtt_Green            = 128;
-  mqtt_Blue             = 255;
-  mqtt_Brightness       = 200;
-  mqtt_RandomEffect     = false;
-  mqtt_EffectSpeed      = 10;
-  mqtt_FadeSpeed        = 10;
-  mqtt_EffectNumber     = 0;
-  mqtt_EffectDirection  = 8;
-  mqtt_RandomEffectPower = 0;
-
-  //Dev Mode for Filter
-  if (DevFilter) {
-    //Filter 1
-    mqtt_Filter1Red       = 255;
-    mqtt_Filter1Green     = 0;
-    mqtt_Filter1Blue      = 0;
-    Filter1Active         = true;
-    //Filter 2
-    mqtt_Filter2Red       = 255;
-    mqtt_Filter2Green     = 128;
-    mqtt_Filter2Blue      = 0;
-    Filter2Active         = true;
-    //Filter 3
-    mqtt_Filter3Red       = 0;
-    mqtt_Filter3Green     = 0;
-    mqtt_Filter3Blue      = 0;
-    Filter3Active         = false;
-    //Filter 4
-    mqtt_Filter4Red       = 0;
-    mqtt_Filter4Green     = 0;
-    mqtt_Filter4Blue      = 0;
-    Filter4Active         = false;
-  }
-}
-
-//--------------------------- Init Effect Arrays ---------------------------//
-void InitEffectArrays() {
-
 }
