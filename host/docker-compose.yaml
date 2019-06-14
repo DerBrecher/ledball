@@ -1,0 +1,11 @@
+version: "3"
+services: 
+  frontend:
+    build: frontend/.
+    ports: 
+      - "80:80"
+  mqtt:
+    build: mqttServer/.
+    ports:
+      - "1883:1883"
+      - "9001:9001"

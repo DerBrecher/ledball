@@ -4,7 +4,7 @@ body {
     font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
     font-size: 24px;
     padding: 20px;
-    margin: 0;
+    margin: 0px;
 }
 
 header {
@@ -36,7 +36,7 @@ section div{
 }
 
 select{
-  font-size: 16px;
+  font-size: 18px;
   color: gray;
   background: white;
   width: 100%;
@@ -83,18 +83,18 @@ input {
   /* background: violet; */
 }
 
-@media only screen and (min-width: 680px){
+@media only screen and (min-width: 530px){
   header{
     margin: auto;
-    width: 600px;
+    width: 450px;
   }
   section{
     margin: auto;
-    width: 600px;
+    width: 450px;
   }
   footer{
     margin: auto;
-    width: 600px;
+    width: 450px;
   }
 }
 
