@@ -1126,6 +1126,26 @@ void noWifiConnection() {
     }
   }
 }
+
+void noMqttConnection() {
+  //Set Brightness to 200
+  actualBrightness = 200;
+
+  unsigned long CurMillis_NoWiFiConntection = millis();
+  if (CurMillis_NoWiFiConntection - PrevMillis_NoWiFiConnection >= TimeOut_NoWiFiConnection) {
+    PrevMillis_NoWiFiConnection = CurMillis_NoWiFiConntection;
+    //Effect when no WiFi is Connected
+    black();
+    for (int i = 0; i < matrix_y; i++) {
+      leds[PosXStatusEffectError][i] = CRGB(0, 0, 255);
+    }
+    if (PosXStatusEffectError >= matrix_x - 1) {
+      PosXStatusEffectError = 0;
+    } else {
+      PosXStatusEffectError++;
+    }
+  }
+}
 //---------------------------End Status Light Effects---------------------------//
 
 //---------------------------Global Light Effects---------------------------//
