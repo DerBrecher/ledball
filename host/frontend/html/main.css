@@ -15,10 +15,8 @@ header {
 
 section {
     background: white;
-    color: gray;
-    padding: 5px 20px 5px 20px;
-    
-    /* box-shadow: 3px 3px 6px 0px rgba(0,0,0,0.75); */
+    color: white;
+    padding: 10px 20px 10px 20px;
 }
 
 footer {
@@ -28,11 +26,26 @@ footer {
 }
 
 section div{
-  /* background: green; */
-  width: 100%;
+  /* background: pink; */
+  /* border: 1px solid gray; */
+  box-shadow: 0 5px 10px rgba(0,0,0,0.19), 0 3px 3px rgba(0,0,0,0.23);
+  margin-bottom: 20px;
+}
+
+section div div {
+  margin-bottom: 0px;
+  padding-left: 2px;
+  padding-right: 2px;
+  line-height: 1.6;
+  background: #546e7a;
   display: flex;
   flex-direction: row;
-  line-height: 1.2;
+
+  box-shadow: none;
+}
+
+section div div div{
+  align-items: center;
 }
 
 select{
@@ -40,10 +53,6 @@ select{
   color: gray;
   background: white;
   width: 100%;
-}
-
-section div div{
-  align-items: center;
 }
 
 button {
@@ -99,18 +108,26 @@ input {
 }
 
 /*CSS Media Querry for changes need to fit phones */
-@media only screen and (max-width: 480px){
-    footer {
-        background: red;
-    }
-    body{
-      font-size: 20px;
-    }
+@media only screen and (max-width: 480px){  
+  body{
+    font-size: 19px;
+    padding: 0px;
+  }
+  .secondColumn{
+    font-size: 14px;
+  }
+  label{
+    width: auto;
+    margin-left: auto;
+    margin-right: 0px;
+  }
+  .thirdColumn{
+    margin-right: 10px;
+  }
 
-    .secondColumn{
-      font-size: 14px;
-    }
-  
+  section div div{
+    line-height: 2;
+  }
 }
 
 
@@ -139,7 +156,7 @@ input {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: #819ca9;
     -webkit-transition: .4s;
     transition: .4s;
   }
@@ -151,17 +168,21 @@ input {
     width: 16px;
     left: 4px;
     bottom: 4px;
-    background-color: white;
+    background-color: #f5f5f5;
     -webkit-transition: .2s;
     transition: .2s;
   }
   
+  input:checked + .toggle:before {
+    /* background-color: red; */
+  }
+
   input:checked + .toggle {
-    background-color: #2196F3;
+    background-color: #363636;
   }
   
   input:focus + .toggle {
-    box-shadow: 0 0 1px #2196F3;
+    box-shadow: 0 0 1px #363636;
   }
   
   input:checked + .toggle:before {
@@ -185,9 +206,8 @@ input {
   width: 100%;
   height: 15px;
   border-radius: 5px;   
-  background: #d3d3d3;
+  background: #819ca9;
   outline: none;
-  opacity: 0.7;
   -webkit-transition: .2s;
   transition: opacity .2s;
 }
@@ -202,7 +222,7 @@ input {
   width: 25px;
   height: 25px;
   border-radius: 50%; 
-  background: #4CAF50;
+  background: #f5f5f5;
   cursor: pointer;
 }
 
@@ -210,6 +230,6 @@ input {
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  background: #4CAF50;
+  background: #f5f5f5;
   cursor: pointer;
 }
