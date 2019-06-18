@@ -681,41 +681,40 @@ void DoubleBounce() {
   unsigned long CurMillis_Effect = millis();
   if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
     PrevMillis_Effect = CurMillis_Effect;
-    if (SwapSingleBounce) {
+
+    if (SwapDoubleBounce) {
       fadeall(FadeSpeed);
       //First Bounce
       for (int i = 0; i < matrix_x; i++) {
-        leds[i][(matrix_y - 1) - PosYEffectSingleBounce] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        leds[i][(matrix_y - 1) - PosYEffectDoubleBounce] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
       }
       //Second Bounce
       for (int i = 0; i < matrix_x; i++) {
-        leds[i][((matrix_y / 2) - 1) - PosYEffectSingleBounce] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        leds[i][(matrix_y / 2) - PosYEffectDoubleBounce] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
       }
-      if (PosYEffectSingleBounce == (matrix_y / 2) - 1) {
-        SwapSingleBounce = false;
-        PosYEffectSingleBounce = 0;
+      if (PosYEffectDoubleBounce == (matrix_y / 2)) {
+        SwapDoubleBounce = false;
         //For Random Color Sync
         NextColor = true;
       } else {
-        PosYEffectSingleBounce++;
+        PosYEffectDoubleBounce++;
       }
     } else {
       fadeall(FadeSpeed);
       //First Bounce
       for (int i = 0; i < matrix_x; i++) {
-        leds[i][PosYEffectSingleBounce] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        leds[i][(matrix_y - 1) - PosYEffectDoubleBounce] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
       }
       //Second Bounce
       for (int i = 0; i < matrix_x; i++) {
-        leds[i][((matrix_y / 2) - 1) + PosYEffectSingleBounce] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        leds[i][(matrix_y / 2) - PosYEffectDoubleBounce] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
       }
-      if (PosYEffectSingleBounce == (matrix_y / 2) - 1) {
-        SwapSingleBounce = true;
-        PosYEffectSingleBounce = 0;
+      if (PosYEffectDoubleBounce == 0) {
+        SwapDoubleBounce = true;
         //For Random Color Sync
         NextColor = true;
       } else {
-        PosYEffectSingleBounce++;
+        PosYEffectDoubleBounce--;
       }
     }
   }
@@ -726,45 +725,64 @@ void Equalizer() {
   if (CurMillis_Effect - PrevMillis_Effect >= EffectSpeed) {
     PrevMillis_Effect = CurMillis_Effect;
 
+    //Top 20% are Black
+    for (int i = 0; i < matrix_x; i++) {
+      for (int u = 0; u < (matrix_y * 0.2); u++) {
+        leds[i][u] = CRGB(0, 0, 0);
+      }
+    }
+
+    //Bottom 20% are Filled
+    for (int i = 0; i < matrix_x; i++) {
+      for (int u = matrix_y - 1; u > matrix_y - int(matrix_y * 0.2); u--) {
+        leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+      }
+    }
 
     //Create New Random Pos for the Hight of the Pillar between 35% and 85% of the Hight of the Pixels
     for (int i = 0; i < matrix_x; i++) {
-      if (ledActive(leds[i][RandomPosYEqualizer[i]])) {
-        RandomPosYEqualizer[i] = int(random(int(matrix_y * 0.35), int(matrix_y * 0.85)));
+      //New Pos when LED is Active and the LED on Top is nor Active
+      if (ledActive(leds[i][RandomPosYEqualizer[i]]) and not ledActive(leds[i][RandomPosYEqualizer[i]-1])) {
+        RandomPosYEqualizer[i] = (int)random((matrix_y * 0.2), (matrix_y * 0.8));
       }
     }
 
     //show or hide Pixel on the way to the new RandomPosYEqualizer
     for (int i = 0; i < matrix_x; i++) {
+
+      //Check if Show is Needed
       for (int u = matrix_y - 1; u > 0; u--) {
-
-        //Check if Show is Needed
-        if (RandomPosYEqualizer[i] < u) {
-          if ((ledActive(leds[i][u + 1])) and (not (ledActive(leds[i][u])))) {
-            leds[i][u] = CRGB(0, 0, 0);
-            break;
-          }
-        }
-
-        //Check if Hide is Needed
-        if (RandomPosYEqualizer[i] > u) {
-          if ((ledActive(leds[i][u - 1])) and (not (ledActive(leds[i][u])))) {
+        if (RandomPosYEqualizer[i] != u) {
+          if (not ledActive(leds[i][u])) {
             leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
             break;
           }
-        }
-
-        if (RandomPosYEqualizer[i] == u) {
+        } else {
           leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
           break;
         }
       }
+
+      //Check if Hide is Needed
+      for (int u = 0; u < matrix_y; u++) {
+        if (RandomPosYEqualizer[i] != u) {
+          if (ledActive(leds[i][u])) {
+            leds[i][u] = CRGB(0, 0, 0);
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+
     }
 
-    //The last 35% are Solid
+    //Update all LEDs for Color Picker
     for (int i = 0; i < matrix_x; i++) {
-      for (int u = (matrix_y - 1); u > matrix_y - int(matrix_y * 0.35); u--) {
-        leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+      for (int u = 0; u < matrix_y; u++) {
+        if (ledActive(leds[i][u])) {
+          leds[i][u] = CRGB(actualColorRed, actualColorGreen, actualColorBlue);
+        }
       }
     }
 
