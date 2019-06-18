@@ -5,7 +5,7 @@
 #include <PubSubClient.h>
 
 //Include Secret Header
-#define LedBall2      //Define used MQTT Parameters
+#define LedBall1      //Define used MQTT Parameters
 #include <secrets.h>
 
 
@@ -13,30 +13,29 @@
 #define Name        "Led Ball Controller"
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
-#define LastModifed "14.06.2019"
-#define Version     "1.1.16"
+#define LastModifed "18.06.2019"
+#define Version     "1.1.18"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
-  Last Modifed  :   14.06.2019
-  Version       :   1.1.16
+  Last Modifed  :   18.06.2019
+  Version       :   1.1.18
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
 
   ToDoList      :   =>
                     - When the direction is used, the speed of the effects must be adjusted according to the direction. Effect speeds are time based and not pixel lenght based
-                    - When gamma8 correction is used fix fade to new color with gamma8 correction
                     - Check Error with Double Bounce and Main State random Value of 846458
-                    - RainDrop add Direction
 
-  Bugs          :   - Color Picker goes to white after time.
+  Bugs          :   - 
 
   Optimize      :   -
 
   Error Help    :   1. If the ball has a green ring going around it. Then the WiFi is disconnected. If this happens the ball will try to restart itself after 3 effect cycles
                     2. If the ball has a red ring going around it. Then its a General Error. If this happens try to pick an other effect. If this doesnt change anything
                        try to restart the ball, and check the States if it happens again.
+                    3. If the ball has a blue ring going around it. Then the MQTT Broker is not aviable.
 
   Patchnotes    :   Version 1.0
                       Initial Code
@@ -74,18 +73,11 @@
                       Small fixes with the MQTT Connection.
                     Version 1.1.16
                       Small fixes with the Publish of the Color Values. Added Error Effect when no MQTT Broker is Aviable
+                    Version 1.1.17
+                      Fixed Equalizer Effect
+                    Version 1.1.18
+                      Added Save from old Parameters before switching to random Effect. Same for other way. Fixed Equalizer Effect bugs. Added more comments to the Code.
 
-
-  EffectList    :   1. fadeall()              => Fades all pixels to black by an nscale8 number
-                    2. black()                => Makes all LEDs black (no brightness change)
-                    3. ShowMatrix()           => Pushes the Matrix to the LED Ball and shows it
-                    4. FadeColor()            => Fades actual Color to new Color
-                    5. FadeBrightness()       => Fades actual Brightness to new Brightness
-                    7. fillSoild()            => Fills the Matrix with a choosen Color
-                    8. ShiftArrayToLeft()     => Shifts the Rows of the Matrix by 1 to the Left
-                    9: ShiftArrayToRight()    => Shifts the Rows of the Matrix by 1 to the Right
-
-  Main Tap Info :   Owns the status machines of the LED ball and initialize the programm
 */
 
 //*************************************************************************************************//
@@ -93,8 +85,7 @@
 //*************************************************************************************************//
 
 //Developer mode skips some initializations and blocks startup effects for shorter Startup time.
-boolean DevMode = false;
-boolean DevFilter = false;
+boolean DevMode = true;
 
 //--- LED Ball Parameters ---//
 #define NUM_LEDS 400                      //Number of LEDs from the Ball
@@ -257,6 +248,10 @@ unsigned long PrevMillis_FPS  = 0;  //Timeout is Controlled by FPS/1000
 int RandomEffectNumber;
 int RandomEffectDirection;
 
+int LastMqttEffectSpeed;
+int LastMqttFadeSpeed;
+int LastMqttEffectDirection;
+
 //--- Fade ---//
 //Actual Brightness of the LEDs
 uint8_t actualBrightness = 0;
@@ -307,14 +302,13 @@ int CounterNewFieldGen = 0;
 int RandomPosYEqualizer[matrix_x];
 
 //-----SingleBounce
-boolean SwapSingleBounce        = false;
+boolean SwapSingleBounce    = false;
 int PosYEffectSingleBounce  = 0;
 int PosXEffectSingleBounce  = 0;
 
 //-----DoubleBounce
-boolean SwapDoubleBounce        = false;
+boolean SwapDoubleBounce    = false;
 int PosYEffectDoubleBounce  = 0;
-int PosXEffectDoubleBounce  = 0;
 
 //----HalfFlash
 boolean SwapHalfFlash = false;

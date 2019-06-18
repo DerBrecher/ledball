@@ -305,9 +305,17 @@ void callback(char* topic, byte * payload, unsigned int length) {
     if (atoi(message)) {
       mqtt_RandomEffect = true;
       mqtt_Client.publish(mqtt_state_RandomEffect, "1");
+      //Save current Parameters
+      LastMqttEffectSpeed     = mqtt_EffectSpeed;
+      LastMqttFadeSpeed       = mqtt_FadeSpeed;
+      LastMqttEffectDirection = mqtt_EffectDirection;
     } else {
       mqtt_RandomEffect = false;
       mqtt_Client.publish(mqtt_state_RandomEffect, "0");
+      //Load Previous Parameters
+      mqtt_EffectSpeed      = LastMqttEffectSpeed;
+      mqtt_FadeSpeed        = LastMqttFadeSpeed;
+      mqtt_EffectDirection  = LastMqttEffectDirection;
     }
 
   }
@@ -342,6 +350,15 @@ void callback(char* topic, byte * payload, unsigned int length) {
       mqtt_EffectNumber = MessageToEffectNumber(message);
     } else {
       mqtt_EffectNumber = Check8BitBoundaries(atoi(message));
+      //Effect Equalizer Init Array
+      if (mqtt_EffectNumber == 7) {
+        //Black out Ball
+        black();
+        //Generate new Pixels
+        for (int i = 0; i < matrix_x; i++) {
+          RandomPosYEqualizer[i] = (int)random((matrix_y * 0.2), (matrix_y * 0.8));
+        }
+      }
     }
 
     mqtt_Client.publish(mqtt_state_EffectNumber, message);
@@ -444,6 +461,12 @@ uint8_t MessageToEffectNumber(char* message) {
   } else if (strcmp(message, "Rave") == 0) {
     return 6;
   } else if (strcmp(message, "Equalizer") == 0) {
+    //Black out Ball
+    black();
+    //Generate new Pixels
+    for (int i = 0; i < matrix_x; i++) {
+      RandomPosYEqualizer[i] = (int)random((matrix_y * 0.2), (matrix_y * 0.8));
+    }
     return 7;
   } else if (strcmp(message, "SingleBounce") == 0) {
     return 8;
