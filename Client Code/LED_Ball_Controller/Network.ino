@@ -45,6 +45,7 @@ void mqtt() {
   if (mqtt_Client.connect(mqtt_client_name, mqtt_username, mqtt_password)) {
     Serial.println("Start channel subscription");
     mqtt_Client.subscribe( mqtt_command_Power);
+    mqtt_Client.subscribe( mqtt_command_Color);
     mqtt_Client.subscribe( mqtt_command_RandomColor);
     mqtt_Client.subscribe( mqtt_command_RainbowColor);
     mqtt_Client.subscribe( mqtt_command_RandomColorSync);
@@ -53,7 +54,6 @@ void mqtt() {
     mqtt_Client.subscribe( mqtt_command_Filter2_Color);
     mqtt_Client.subscribe( mqtt_command_Filter3_Color);
     mqtt_Client.subscribe( mqtt_command_Filter4_Color);
-    mqtt_Client.subscribe( mqtt_command_Color);
     mqtt_Client.subscribe( mqtt_command_Brightness);
     mqtt_Client.subscribe( mqtt_command_RandomEffect);
     mqtt_Client.subscribe( mqtt_command_EffectSpeed);
@@ -90,11 +90,11 @@ void callback(char* topic, byte * payload, unsigned int length) {
   if (String(mqtt_command_Power).equals(topic)) {
     if (atoi(message)) {
       mqtt_Power = true;
-      mqtt_Client.publish(mqtt_state_Power, "1");
+      mqtt_Client.publish(mqtt_state_Power, "1", true);
     }
     else {
       mqtt_Power = false;
-      mqtt_Client.publish(mqtt_state_Power, "0");
+      mqtt_Client.publish(mqtt_state_Power, "0", true);
     }
   }
 
@@ -113,10 +113,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
       mqtt_FilterColorMulti = false;
     }
 
-    mqtt_Client.publish(mqtt_state_RandomColor, message);         //State of Random Color
-    mqtt_Client.publish(mqtt_state_RainbowColor, "0");     //Turn of Rainbow Color
-    mqtt_Client.publish(mqtt_state_RandomColorSync, "0");  //Turn of Random Color Sync
-    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0"); //Turn of Filter Color Multi
+    mqtt_Client.publish(mqtt_state_RandomColor, message, true);         //State of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, "0", true);    //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0", true); //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0", true); //Turn of Filter Color Multi
 
     //For Random Color Sync
     SendNotSupported = true;
@@ -137,10 +137,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
       mqtt_RandomColorSync  = false;
       mqtt_FilterColorMulti = false;
     }
-    mqtt_Client.publish(mqtt_state_RandomColor, "0");      //Turn of Random Color
-    mqtt_Client.publish(mqtt_state_RainbowColor, message);        //State of Rainbow Color
-    mqtt_Client.publish(mqtt_state_RandomColorSync, "0");  //Turn of Random Color Sync
-    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0"); //Turn of Filter Color Multi
+    mqtt_Client.publish(mqtt_state_RandomColor, "0", true);     //Turn of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, message, true);       //State of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0", true); //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0", true); //Turn of Filter Color Multi
 
     //For Random Color Sync
     SendNotSupported = true;
@@ -161,10 +161,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
       mqtt_RandomColorSync  = false;
       mqtt_FilterColorMulti = false;
     }
-    mqtt_Client.publish(mqtt_state_RandomColor, "0");  //Turn of Random Color
-    mqtt_Client.publish(mqtt_state_RainbowColor, "0"); //Turn of Rainbow Color
-    mqtt_Client.publish(mqtt_state_RandomColorSync, message); //State of Random Color Sync
-    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0"); //Turn of Filter Color Multi
+    mqtt_Client.publish(mqtt_state_RandomColor, "0", true); //Turn of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, "0", true); //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, message, true); //State of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0", true); //Turn of Filter Color Multi
 
     //For Random Color Sync
     SendNotSupported = true;
@@ -185,10 +185,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
       mqtt_RandomColorSync  = false;
       mqtt_FilterColorMulti = false;
     }
-    mqtt_Client.publish(mqtt_state_RandomColor, "0");  //Turn of Random Color
-    mqtt_Client.publish(mqtt_state_RainbowColor, "0"); //Turn of Rainbow Color
-    mqtt_Client.publish(mqtt_state_RandomColorSync, "0"); //Turn of Random Color Sync
-    mqtt_Client.publish(mqtt_state_FilterColorMulti, message); //State of Filter Color Multi
+    mqtt_Client.publish(mqtt_state_RandomColor, "0", true); //Turn of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, "0", true); //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0", true); //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, message, true); //State of Filter Color Multi
 
     //For Random Color Sync
     SendNotSupported = true;
@@ -197,7 +197,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Parameter [mqtt_Filter1Red, mqtt_Filter1Green, mqtt_Filter1Blue] -------------------//
   if (String(mqtt_command_Filter1_Color).equals(topic)) {
-    mqtt_Client.publish(mqtt_state_Filter1_Color, message);
+    mqtt_Client.publish(mqtt_state_Filter1_Color, message, true);
     char* red   = strtok(message, ",");
     char* green = strtok(NULL, ",");
     char* blue  = strtok(NULL, ",");
@@ -215,7 +215,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Parameter [mqtt_Filter2Red, mqtt_Filter2Green, mqtt_Filter2Blue] -------------------//
   if (String(mqtt_command_Filter2_Color).equals(topic)) {
-    mqtt_Client.publish(mqtt_state_Filter2_Color, message);
+    mqtt_Client.publish(mqtt_state_Filter2_Color, message, true);
     char* red   = strtok(message, ",");
     char* green = strtok(NULL, ",");
     char* blue  = strtok(NULL, ",");
@@ -233,7 +233,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Parameter [mqtt_Filter3Red, mqtt_Filter3Green, mqtt_Filter3Blue] -------------------//
   if (String(mqtt_command_Filter3_Color).equals(topic)) {
-    mqtt_Client.publish(mqtt_state_Filter3_Color, message);
+    mqtt_Client.publish(mqtt_state_Filter3_Color, message, true);
     char* red   = strtok(message, ",");
     char* green = strtok(NULL, ",");
     char* blue  = strtok(NULL, ",");
@@ -251,7 +251,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Parameter [mqtt_Filter4Red, mqtt_Filter4Green, mqtt_Filter4Blue] -------------------//
   if (String(mqtt_command_Filter4_Color).equals(topic)) {
-    mqtt_Client.publish(mqtt_state_Filter4_Color, message);
+    mqtt_Client.publish(mqtt_state_Filter4_Color, message, true);
     char* red   = strtok(message, ",");
     char* green = strtok(NULL, ",");
     char* blue  = strtok(NULL, ",");
@@ -269,7 +269,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 
   //------------------- Parameter [mqtt_Red, mqtt_Green, mqtt_Blue] -------------------//
   if (String(mqtt_command_Color).equals(topic)) {
-    mqtt_Client.publish(mqtt_state_Color, message);
+    mqtt_Client.publish(mqtt_state_Color, message, true);
     char* red   = strtok(message, ",");
     char* green = strtok(NULL, ",");
     char* blue  = strtok(NULL, ",");
@@ -283,10 +283,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
     mqtt_RandomColorSync  = false;
     mqtt_FilterColorMulti = false;
 
-    mqtt_Client.publish(mqtt_state_RandomColor, "0");     //Turn of Random Color
-    mqtt_Client.publish(mqtt_state_RainbowColor, "0");    //Turn of Rainbow Color
-    mqtt_Client.publish(mqtt_state_RandomColorSync, "0"); //Turn of Random Color Sync
-    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0"); //Turn of Filter Color Multi
+    mqtt_Client.publish(mqtt_state_RandomColor, "0", true);    //Turn of Random Color
+    mqtt_Client.publish(mqtt_state_RainbowColor, "0", true);   //Turn of Rainbow Color
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0", true); //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_FilterColorMulti, "0", true); //Turn of Filter Color Multi
 
 
     //For Random Color Sync
@@ -297,21 +297,21 @@ void callback(char* topic, byte * payload, unsigned int length) {
   //------------------- Parameter [mqtt_Brightness] -------------------//
   if (String(mqtt_command_Brightness).equals(topic)) {
     mqtt_Brightness = Check8BitBoundaries(atoi(message));
-    mqtt_Client.publish(mqtt_state_Brightness, message);
+    mqtt_Client.publish(mqtt_state_Brightness, message, true);
   }
 
   //------------------- Parameter [mqtt_RandomEffect] -------------------//
   if (String(mqtt_command_RandomEffect).equals(topic)) {
     if (atoi(message)) {
       mqtt_RandomEffect = true;
-      mqtt_Client.publish(mqtt_state_RandomEffect, "1");
+      mqtt_Client.publish(mqtt_state_RandomEffect, "1", true);
       //Save current Parameters
       LastMqttEffectSpeed     = mqtt_EffectSpeed;
       LastMqttFadeSpeed       = mqtt_FadeSpeed;
       LastMqttEffectDirection = mqtt_EffectDirection;
     } else {
       mqtt_RandomEffect = false;
-      mqtt_Client.publish(mqtt_state_RandomEffect, "0");
+      mqtt_Client.publish(mqtt_state_RandomEffect, "0", true);
       //Load Previous Parameters
       mqtt_EffectSpeed      = LastMqttEffectSpeed;
       mqtt_FadeSpeed        = LastMqttFadeSpeed;
@@ -323,13 +323,13 @@ void callback(char* topic, byte * payload, unsigned int length) {
   //------------------- Parameter [mqtt_RandomEffectPower] -------------------//
   if (String(mqtt_command_RandomEffectPower).equals(topic)) {
     mqtt_RandomEffectPower = Check8BitBoundaries(atoi(message));
-    mqtt_Client.publish(mqtt_state_RandomEffectPower, message);
+    mqtt_Client.publish(mqtt_state_RandomEffectPower, message, true);
   }
 
   //------------------- Parameter [mqtt_EffectSpeed] -------------------//
   if (String(mqtt_command_EffectSpeed).equals(topic)) {
     mqtt_EffectSpeed = Check8BitBoundaries(atoi(message));
-    mqtt_Client.publish(mqtt_state_EffectSpeed, message);
+    mqtt_Client.publish(mqtt_state_EffectSpeed, message, true);
   }
 
   //------------------- Parameter [mqtt_FadeSpeed] -------------------//
@@ -339,7 +339,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
     if (mqtt_FadeSpeed == 255) {
       mqtt_FadeSpeed - 1;
     }
-    mqtt_Client.publish(mqtt_state_FadeSpeed, message);
+    mqtt_Client.publish(mqtt_state_FadeSpeed, message, true);
   }
 
   //------------------- Parameter [mqtt_EffectNumber] -------------------//
@@ -354,14 +354,10 @@ void callback(char* topic, byte * payload, unsigned int length) {
       if (mqtt_EffectNumber == 7) {
         //Black out Ball
         black();
-        //Generate new Pixels
-        for (int i = 0; i < matrix_x; i++) {
-          RandomPosYEqualizer[i] = (int)random((matrix_y * 0.2), (matrix_y * 0.8));
-        }
       }
     }
 
-    mqtt_Client.publish(mqtt_state_EffectNumber, message);
+    mqtt_Client.publish(mqtt_state_EffectNumber, message, true);
   }
 
   //------------------- Parameter [mqtt_EffectDirection] -------------------//
@@ -379,7 +375,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
       TempDirection = 8;
     }
     mqtt_EffectDirection = CheckDirectionBoundaries(TempDirection);
-    mqtt_Client.publish(mqtt_state_EffectDirection, message);
+    mqtt_Client.publish(mqtt_state_EffectDirection, message, true);
 
     //Needed for Rave
     InitRave = true;
@@ -390,11 +386,11 @@ void callback(char* topic, byte * payload, unsigned int length) {
   if (String(mqtt_command_Filter1).equals(topic)) {
     LightDataChange = true;
     if (atoi(message)) {
-      mqtt_Client.publish(mqtt_state_Filter1, "1");
+      mqtt_Client.publish(mqtt_state_Filter1, "1", true);
       Filter1Active = true;
     }
     else {
-      mqtt_Client.publish(mqtt_state_Filter1, "0");
+      mqtt_Client.publish(mqtt_state_Filter1, "0", true);
       Filter1Active = false;
     }
   }
@@ -403,11 +399,11 @@ void callback(char* topic, byte * payload, unsigned int length) {
   if (String(mqtt_command_Filter2).equals(topic)) {
     LightDataChange = true;
     if (atoi(message)) {
-      mqtt_Client.publish(mqtt_state_Filter2, "1");
+      mqtt_Client.publish(mqtt_state_Filter2, "1", true);
       Filter2Active = true;
     }
     else {
-      mqtt_Client.publish(mqtt_state_Filter2, "0");
+      mqtt_Client.publish(mqtt_state_Filter2, "0", true);
       Filter2Active = false;
     }
   }
@@ -416,11 +412,11 @@ void callback(char* topic, byte * payload, unsigned int length) {
   if (String(mqtt_command_Filter3).equals(topic)) {
     LightDataChange = true;
     if (atoi(message)) {
-      mqtt_Client.publish(mqtt_state_Filter3, "1");
+      mqtt_Client.publish(mqtt_state_Filter3, "1", true);
       Filter3Active = true;
     }
     else {
-      mqtt_Client.publish(mqtt_state_Filter3, "0");
+      mqtt_Client.publish(mqtt_state_Filter3, "0", true);
       Filter3Active = false;
     }
   }
@@ -429,11 +425,11 @@ void callback(char* topic, byte * payload, unsigned int length) {
   if (String(mqtt_command_Filter4).equals(topic)) {
     LightDataChange = true;
     if (atoi(message)) {
-      mqtt_Client.publish(mqtt_state_Filter4, "1");
+      mqtt_Client.publish(mqtt_state_Filter4, "1", true);
       Filter4Active = true;
     }
     else {
-      mqtt_Client.publish(mqtt_state_Filter4, "0");
+      mqtt_Client.publish(mqtt_state_Filter4, "0", true);
       Filter4Active = false;
     }
   }
@@ -443,7 +439,7 @@ void callback(char* topic, byte * payload, unsigned int length) {
 uint8_t MessageToEffectNumber(char* message) {
   //Deactivate RandomEffect if Manuel Effect is selected
   mqtt_RandomEffect = false;
-  mqtt_Client.publish(mqtt_state_RandomEffect, "0");
+  mqtt_Client.publish(mqtt_state_RandomEffect, "0", true);
 
   //Converts Name of the Effect to the EffectNumber
   if (strcmp(message, "black") == 0) {
@@ -463,10 +459,6 @@ uint8_t MessageToEffectNumber(char* message) {
   } else if (strcmp(message, "Equalizer") == 0) {
     //Black out Ball
     black();
-    //Generate new Pixels
-    for (int i = 0; i < matrix_x; i++) {
-      RandomPosYEqualizer[i] = (int)random((matrix_y * 0.2), (matrix_y * 0.8));
-    }
     return 7;
   } else if (strcmp(message, "SingleBounce") == 0) {
     return 8;
@@ -497,7 +489,7 @@ void HeartBeat() {
     String FinalMessage = LedBallName + "," + String(HeartBeatCounter);
     char message[30];
     FinalMessage.toCharArray(message, sizeof(message));
-    mqtt_Client.publish(mqtt_heartbeat, message);
+    mqtt_Client.publish(mqtt_heartbeat, message, true);
   }
 }
 

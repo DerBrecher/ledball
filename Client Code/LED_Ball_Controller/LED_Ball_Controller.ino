@@ -5,7 +5,7 @@
 #include <PubSubClient.h>
 
 //Include Secret Header
-#define LedBall1      //Define used MQTT Parameters
+#define LedBall2      //Define used MQTT Parameters
 #include <secrets.h>
 
 
@@ -14,21 +14,22 @@
 #define Programmer  "Nico Weidenfeller"
 #define Created     "21.02.2019"
 #define LastModifed "18.06.2019"
-#define Version     "1.1.18"
+#define Version     "1.1.19"
 
 /*
   Name          :   Led Ball Controller
   Programmer    :   Nico Weidenfeller
   Created       :   21.02.2019
   Last Modifed  :   18.06.2019
-  Version       :   1.1.18
+  Version       :   1.1.19
   Description   :   Controller for a 400-led Disco Ball (size can be changed with the Resolution) with a Resolution of 16 * 25
+  Libraries     :   FastLED 3.1.6 , PubSubClient 2.7.0 , Esp8266WiFi
 
   ToDoList      :   =>
                     - When the direction is used, the speed of the effects must be adjusted according to the direction. Effect speeds are time based and not pixel lenght based
                     - Check Error with Double Bounce and Main State random Value of 846458
 
-  Bugs          :   - 
+  Bugs          :   -
 
   Optimize      :   -
 
@@ -77,7 +78,8 @@
                       Fixed Equalizer Effect
                     Version 1.1.18
                       Added Save from old Parameters before switching to random Effect. Same for other way. Fixed Equalizer Effect bugs. Added more comments to the Code.
-
+                    Version 1.1.19
+                      Added MQTT Retain Flag to the publish functions
 */
 
 //*************************************************************************************************//
@@ -251,6 +253,8 @@ int RandomEffectDirection;
 int LastMqttEffectSpeed;
 int LastMqttFadeSpeed;
 int LastMqttEffectDirection;
+
+boolean SingleInitEqualizer = true;
 
 //--- Fade ---//
 //Actual Brightness of the LEDs
@@ -553,6 +557,10 @@ void loop() {
           black();
           MainState = 10;
         }
+      }
+      //Generate new Pixels for Equalizer
+      for (int i = 0; i < matrix_x; i++) {
+        RandomPosYEqualizer[i] = (int)random((matrix_y * 0.2), (matrix_y * 0.8));
       }
       break;
 
@@ -1046,7 +1054,7 @@ void ColorPickerFilterColorMulti() {
 void ColorPickerRandomSyncNotSupported() {
   if (SendNotSupported) {
     //Reset MQTT Switch
-    mqtt_Client.publish(mqtt_state_RandomColorSync, "0"); //Turn of Random Color Sync
+    mqtt_Client.publish(mqtt_state_RandomColorSync, "0",true); //Turn of Random Color Sync
     SendNotSupported = false;
   }
   //Reset Light Control switch

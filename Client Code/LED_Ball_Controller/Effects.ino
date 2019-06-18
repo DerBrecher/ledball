@@ -111,13 +111,16 @@ void RandomEffectPicker() {
   //Randomly Picks Effects. Got 3 Steps: 0. Slow 1. Middle 2.Fast 3. Super Fast
   unsigned long CurMillis_RandomEffectPicker = millis();
 
+  //For Random Color Sync
+  ColorPickerRandomSyncNotSupported();
+
   switch (RandomEffectPower) {
 
     case 0: //Slow
       if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 60000) {  //60 Sec
         PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
         //Random Effect
-        RandomEffectNumber = int(random(1, 8));
+        RandomEffectNumber = int(random(1, 9));
         //Random Effect Direction
         int temp = int(random(0, 3));
         switch (temp) {
@@ -136,7 +139,7 @@ void RandomEffectPicker() {
     case 1: //Middle
       if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 40000) {  //40 Sec
         PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
-        RandomEffectNumber = int(random(1, 8));
+        RandomEffectNumber = int(random(1, 9));
         //Random Effect Direction
         int temp = int(random(0, 3));
         switch (temp) {
@@ -155,7 +158,7 @@ void RandomEffectPicker() {
     case 2: //Fast
       if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 20000) {  //20 Sec
         PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
-        RandomEffectNumber = int(random(1, 8));
+        RandomEffectNumber = int(random(1, 9));
         //Random Effect Direction
         int temp = int(random(0, 3));
         switch (temp) {
@@ -174,7 +177,7 @@ void RandomEffectPicker() {
     case 3: //Super Fast
       if (CurMillis_RandomEffectPicker - PrevMillis_RandomEffectPicker >= 10000) {  //10 Sec
         PrevMillis_RandomEffectPicker = CurMillis_RandomEffectPicker;
-        RandomEffectNumber = int(random(1, 8));
+        RandomEffectNumber = int(random(1, 9));
         //Random Effect Direction
         int temp = int(random(0, 3));
         switch (temp) {
@@ -190,6 +193,14 @@ void RandomEffectPicker() {
       }
       break;
 
+  }
+
+  if (RandomEffectNumber == 7 and SingleInitEqualizer) {
+    black();
+    SingleInitEqualizer = false;
+  }
+  if (RandomEffectNumber != 7) {
+    SingleInitEqualizer = true;
   }
 
   //Current Random Effect
@@ -742,7 +753,7 @@ void Equalizer() {
     //Create New Random Pos for the Hight of the Pillar between 35% and 85% of the Hight of the Pixels
     for (int i = 0; i < matrix_x; i++) {
       //New Pos when LED is Active and the LED on Top is nor Active
-      if (ledActive(leds[i][RandomPosYEqualizer[i]]) and not ledActive(leds[i][RandomPosYEqualizer[i]-1])) {
+      if (ledActive(leds[i][RandomPosYEqualizer[i]]) and not ledActive(leds[i][RandomPosYEqualizer[i] - 1])) {
         RandomPosYEqualizer[i] = (int)random((matrix_y * 0.2), (matrix_y * 0.8));
       }
     }
