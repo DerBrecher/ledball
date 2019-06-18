@@ -3,7 +3,7 @@ var reconnectTimeout = 2000;
 var host = ""; //gets updated to window.location.hostname on MQTT Connect
 var port = 9001;
 
-//MQTT Topics
+//MQTT Commands Topics
 var powerStateTopic = "ledball/command/Power"; //Toggle
 var randomColorTopic = "ledball/command/RandomColor"; //Toggle
 var rainbowColorTopic = "ledball/command/RainbowColor"; //Toggle
@@ -28,6 +28,32 @@ var brightnessTopic = "ledball/command/Brightness"; //Slider
 var effectSpeedTopic = "ledball/command/EffectSpeed"; //Slider
 var fadeSpeedTopic = "ledball/command/FadeSpeed"; //Slider
 var randomEffectPowerTopic = "ledball/command/RandomEffectPower"; //Slider
+
+//MQTT State Topics
+var powerStateStateTopic = "ledball/state/Power"; //Toggle
+var randomColorStateTopic = "ledball/state/RandomColor"; //Toggle
+var rainbowColorStateTopic = "ledball/state/RainbowColor"; //Toggle
+var randomColorSyncStateTopic = "ledball/state/RandomColorSync"; //Toggle
+var filterColorMultiStateTopic = "ledball/state/FilterColorMulti"; //Toggle
+var randomEffectStateTopic = "ledball/state/RandomEffect"; //Toggle
+var filter1StateTopic = "ledball/state/Filter1"; //Toggle
+var filter2StateTopic = "ledball/state/Filter2"; //Toggle
+var filter3StateTopic = "ledball/state/Filter3"; //Toggle
+var filter4StateTopic = "ledball/state/Filter4"; //Toggle
+
+var filter1ColorStateTopic = "ledball/state/Filter1/Color"; //ColorPicker
+var filter2ColorStateTopic = "ledball/state/Filter2/Color"; //ColorPicker
+var filter3ColorStateTopic = "ledball/state/Filter3/Color"; //ColorPicker
+var filter4ColorStateTopic = "ledball/state/Filter4/Color"; //ColorPicker
+var colorStateTopic = "ledball/state/Color"; //ColorPicker
+
+var effectNumberStateTopic = "ledball/state/EffectNumber"; //List
+var effectDirectionStateTopic = "ledball/state/EffectDirection"; //List
+
+var brightnessStateTopic = "ledball/state/Brightness"; //Slider
+var effectSpeedStateTopic = "ledball/state/EffectSpeed"; //Slider
+var fadeSpeedStateTopic = "ledball/state/FadeSpeed"; //Slider
+var randomEffectPowerStateTopic = "ledball/state/RandomEffectPower"; //Slider
 
 
 //------ Test Functions ------
@@ -137,30 +163,30 @@ function onConnect() {
 
     //Subscribe to Mqtt Topics
     //Toggles
-    mqtt.subscribe(powerStateTopic);
-    mqtt.subscribe(randomColorTopic);
-    mqtt.subscribe(rainbowColorTopic);
-    mqtt.subscribe(randomColorSyncTopic);
-    mqtt.subscribe(filterColorMultiTopic);
-    mqtt.subscribe(randomEffectTopic);
-    mqtt.subscribe(filter1Topic);
-    mqtt.subscribe(filter2Topic);
-    mqtt.subscribe(filter3Topic);
-    mqtt.subscribe(filter4Topic);
+    mqtt.subscribe(powerStateStateTopic);
+    mqtt.subscribe(randomColorStateTopic);
+    mqtt.subscribe(rainbowColorStateTopic);
+    mqtt.subscribe(randomColorSyncStateTopic);
+    mqtt.subscribe(filterColorMultiStateTopic);
+    mqtt.subscribe(randomEffectStateTopic);
+    mqtt.subscribe(filter1StateTopic);
+    mqtt.subscribe(filter2StateTopic);
+    mqtt.subscribe(filter3StateTopic);
+    mqtt.subscribe(filter4StateTopic);
     //Lists
-    mqtt.subscribe(effectNumberTopic);
-    mqtt.subscribe(effectDirectionTopic);
+    mqtt.subscribe(effectNumberStateTopic);
+    mqtt.subscribe(effectDirectionStateTopic);
     //Sliders
-    mqtt.subscribe(effectSpeedTopic);
-    mqtt.subscribe(brightnessTopic);
-    mqtt.subscribe(fadeSpeedTopic);
-    mqtt.subscribe(randomEffectPowerTopic);
+    mqtt.subscribe(effectSpeedStateTopic);
+    mqtt.subscribe(brightnessStateTopic);
+    mqtt.subscribe(fadeSpeedStateTopic);
+    mqtt.subscribe(randomEffectPowerStateTopic);
     //ColorPickers
-    mqtt.subscribe(colorTopic);
-    mqtt.subscribe(filter1ColorTopic);
-    mqtt.subscribe(filter2ColorTopic);
-    mqtt.subscribe(filter3ColorTopic);
-    mqtt.subscribe(filter4ColorTopic);
+    mqtt.subscribe(colorStateTopic);
+    mqtt.subscribe(filter1ColorStateTopic);
+    mqtt.subscribe(filter2ColorStateTopic);
+    mqtt.subscribe(filter3ColorStateTopic);
+    mqtt.subscribe(filter4ColorStateTopic);
 }
 
 function onFailure(message) {
@@ -183,73 +209,73 @@ function onMessageArrived(message) {
 
     switch (message.destinationName) {
         //Toggles
-        case powerStateTopic:
+        case powerStateStateTopic:
             updateToggle(message, "powerSwitch");
             break;
-        case randomColorTopic:
+        case randomColorStateTopic:
             updateToggle(message, "randomColor");
             break;
-        case rainbowColorTopic:
+        case rainbowColorStateTopic:
             updateToggle(message, "rainbowActive");
             break;
-        case randomColorSyncTopic:
+        case randomColorSyncStateTopic:
             updateToggle(message, "randomColorSync");
             break;
-        case filterColorMultiTopic:
+        case filterColorMultiStateTopic:
             updateToggle(message, "filterColorMulti");
             break;
-        case randomEffectTopic:
+        case randomEffectStateTopic:
             updateToggle(message, "randomEffect");
             break;
-        case filter1Topic:
+        case filter1StateTopic:
             updateToggle(message, "filter1");
             break;
-        case filter2Topic:
+        case filter2StateTopic:
             updateToggle(message, "filter2");
             break;
-        case filter3Topic:
+        case filter3StateTopic:
             updateToggle(message, "filter3");
             break;
-        case filter4Topic:
+        case filter4StateTopic:
             updateToggle(message, "filter4");
             break;
 
         //Lists
-        case effectNumberTopic:
+        case effectNumberStateTopic:
             updateList(message, "effectList");
             break;
-        case effectDirectionTopic:
+        case effectDirectionStateTopic:
             updateDirectionList(message, "effectDirection");
             break;
 
         //Sliders
-        case effectSpeedTopic:
+        case effectSpeedStateTopic:
             updateSlider(message, "effectSpeed", "effectSpeedDisplay");
             break;
-        case brightnessTopic:
+        case brightnessStateTopic:
             updateSlider(message, "brightness", "brightnessDisplay");
             break;
-        case fadeSpeedTopic:
+        case fadeSpeedStateTopic:
             updateSlider(message, "fadeSpeed", "fadeSpeedDisplay");
             break;
-        case randomEffectPowerTopic:
+        case randomEffectPowerStateTopic:
             updateSlider(message, "randomEffectPower", "randomEffectPowerDisplay");
             break;
 
         //ColorPickers
-        case colorTopic:
+        case colorStateTopic:
             updateColorPicker(message, "colorPicker");
             break;
-        case filter1ColorTopic:
+        case filter1ColorStateTopic:
             updateColorPicker(message, "filter1Color");
             break;
-        case filter2ColorTopic:
+        case filter2ColorStateTopic:
             updateColorPicker(message, "filter2Color");
             break;
-        case filter3ColorTopic:
+        case filter3ColorStateTopic:
             updateColorPicker(message, "filter3Color");
             break;
-        case filter4ColorTopic:
+        case filter4ColorStateTopic:
             updateColorPicker(message, "filter4Color");
             break;
     }
