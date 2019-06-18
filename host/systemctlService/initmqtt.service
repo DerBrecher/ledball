@@ -1,0 +1,13 @@
+[Unit]
+Description=Init the states on the mqtt Server
+Requires=mqttserver.service
+After=mqttserver.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 30
+WorkingDirectory=/home/pi/ledball/host/mqttServer/
+ExecStart=/bin/sh ./initmqttstates.sh
+
+[Install]
+WantedBy=multi-user.target

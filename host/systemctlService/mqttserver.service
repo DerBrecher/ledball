@@ -1,0 +1,14 @@
+[Unit]
+Description=MQTT Server for the LED Ball Controller
+Requires=docker.service
+After=docker.service
+
+[Service]
+WorkingDirectory=/home/pi
+ExecStart=/usr/bin/docker run -p 1883:1883 -p 9001:9001 mqttserver
+Restart=on-failure
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target
